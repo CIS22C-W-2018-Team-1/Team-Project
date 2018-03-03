@@ -7,12 +7,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-
-interface Visitor<T> {
-	void visit(T obj);
-}
-
-// --- assumes definition of simple class edu.deanza.cis22c.Pair<E, F>
+import java.util.function.Consumer;
 
 // --- edu.deanza.cis22c.w2018.team1.Vertex class ------------------------------------------------------
 class Vertex<E> {
@@ -186,7 +181,7 @@ public class Graph<E> {
 	/**
 	 * Breadth-first traversal from the parameter startElement
 	 */
-	public void breadthFirstTraversal(E startElement, Visitor<E> visitor) {
+	public void breadthFirstTraversal(E startElement, Consumer<E> visitor) {
 		unvisitVertices();
 
 		Vertex<E> startVertex = vertexSet.get(startElement);
@@ -196,7 +191,7 @@ public class Graph<E> {
 	/**
 	 * Depth-first traversal from the parameter startElement
 	 */
-	public void depthFirstTraversal(E startElement, Visitor<E> visitor) {
+	public void depthFirstTraversal(E startElement, Consumer<E> visitor) {
 		unvisitVertices();
 
 		Vertex<E> startVertex = vertexSet.get(startElement);
@@ -204,12 +199,12 @@ public class Graph<E> {
 	}
 
 	protected void breadthFirstTraversalHelper(Vertex<E> startVertex,
-	                                           Visitor<E> visitor) {
+	                                           Consumer<E> visitor) {
 		LinkedQueue<Vertex<E>> vertexQueue = new LinkedQueue<>();
 		E startData = startVertex.getData();
 
 		startVertex.visit();
-		visitor.visit(startData);
+		visitor.accept(startData);
 		vertexQueue.enqueue(startVertex);
 		while (!vertexQueue.isEmpty()) {
 			Vertex<E> nextVertex = vertexQueue.dequeue();
@@ -222,13 +217,13 @@ public class Graph<E> {
 				if (!neighborVertex.isVisited()) {
 					vertexQueue.enqueue(neighborVertex);
 					neighborVertex.visit();
-					visitor.visit(neighborVertex.getData());
+					visitor.accept(neighborVertex.getData());
 				}
 			}
 		}
 	} // end breadthFirstTraversalHelper
 
-	public void depthFirstTraversalHelper(Vertex<E> startVertex, Visitor<E> visitor) {
+	public void depthFirstTraversalHelper(Vertex<E> startVertex, Consumer<E> visitor) {
 		// YOU COMPLETE THIS (USE THE RECURSIVE ALGORITHM GIVEN FOR LESSON 11 EXERCISE)
 	}
 
