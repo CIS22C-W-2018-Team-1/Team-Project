@@ -3,10 +3,12 @@ package edu.deanza.cis22c.w2018.team1;
 import edu.deanza.cis22c.Pair;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 // --- edu.deanza.cis22c.w2018.team1.Vertex class ------------------------------------------------------
@@ -14,7 +16,6 @@ class Vertex<E> {
 	public HashMap<E, Pair<Vertex<E>, Double>> adjList
 			= new HashMap<>();
 	public E data;
-	public boolean visited;
 
 	public Vertex(E x) {
 		data = x;
@@ -28,19 +29,7 @@ class Vertex<E> {
 		return data;
 	}
 
-	public boolean isVisited() {
-		return visited;
-	}
-
-	public void visit() {
-		visited = true;
-	}
-
-	public void unvisit() {
-		visited = false;
-	}
-
-	public Iterator<Map.Entry<E, Pair<Vertex<E>, Double>>> iterator() {
+	public Iterator<Entry<E, Pair<Vertex<E>, Double>>> iterator() {
 		return adjList.entrySet().iterator();
 	}
 
@@ -168,42 +157,18 @@ public class Graph<E> {
 		vertexSet.clear();
 	}
 
-	// reset all vertices to unvisited
-	public void unvisitVertices() {
-		Iterator<Entry<E, Vertex<E>>> iter;
-
-		iter = vertexSet.entrySet().iterator();
-		while (iter.hasNext()) {
-			iter.next().getValue().unvisit();
-		}
-	}
-
 	/**
 	 * Breadth-first traversal from the parameter startElement
 	 */
 	public void breadthFirstTraversal(E startElement, Consumer<E> visitor) {
-		unvisitVertices();
-
 		Vertex<E> startVertex = vertexSet.get(startElement);
-		breadthFirstTraversalHelper(startVertex, visitor);
-	}
 
-	/**
-	 * Depth-first traversal from the parameter startElement
-	 */
-	public void depthFirstTraversal(E startElement, Consumer<E> visitor) {
-		unvisitVertices();
+		Set<Vertex<E>> visited = new HashSet<>();
 
-		Vertex<E> startVertex = vertexSet.get(startElement);
-		depthFirstTraversalHelper(startVertex, visitor);
-	}
-
-	protected void breadthFirstTraversalHelper(Vertex<E> startVertex,
-	                                           Consumer<E> visitor) {
 		LinkedQueue<Vertex<E>> vertexQueue = new LinkedQueue<>();
 		E startData = startVertex.getData();
 
-		startVertex.visit();
+		visited.add(startVertex);
 		visitor.accept(startData);
 		vertexQueue.enqueue(startVertex);
 		while (!vertexQueue.isEmpty()) {
@@ -214,26 +179,33 @@ public class Graph<E> {
 			while (iter.hasNext()) {
 				Entry<E, Pair<Vertex<E>, Double>> nextEntry = iter.next();
 				Vertex<E> neighborVertex = nextEntry.getValue().first;
-				if (!neighborVertex.isVisited()) {
+				if (!visited.contains(neighborVertex)) {
 					vertexQueue.enqueue(neighborVertex);
-					neighborVertex.visit();
+					visited.add(neighborVertex);
 					visitor.accept(neighborVertex.getData());
 				}
 			}
 		}
-	} // end breadthFirstTraversalHelper
+	}
 
-	protected void depthFirstTraversalHelper(Vertex<E> startVertex, Consumer<E> visitor) {
+	/**
+	 * Depth-first traversal from the parameter startElement
+	 */
+	public void depthFirstTraversal(E startElement, Consumer<E> visitor) {
+		Vertex<E> startVertex = vertexSet.get(startElement);
+
 		LinkedStack<Vertex<E>> vertexStack = new LinkedStack<>();
 		vertexStack.push(startVertex);
 
+		Set<Vertex<E>> visited = new HashSet<>();
+
 		while (!vertexStack.isEmpty()) {
 			Vertex<E> nextVertex = vertexStack.pop();
-			nextVertex.visit();
+			visited.add(nextVertex);
 			visitor.accept(nextVertex.getData());
 			nextVertex.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
-				if (!neighbor.isVisited()) {
+				if (!visited.contains(nextVertex)) {
 					vertexStack.push(neighbor);
 				}
 			});
