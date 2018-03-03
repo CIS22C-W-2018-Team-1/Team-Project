@@ -188,11 +188,10 @@ public class Graph<E> implements Iterable<E> {
 		public E next() {
 			Vertex<E> next = pollPool.get();
 
-			visited.add(next);
-
 			next.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
 				if (!visited.contains(neighbor)) {
+					visited.add(neighbor);
 					addToPool.accept(neighbor);
 				}
 			});
