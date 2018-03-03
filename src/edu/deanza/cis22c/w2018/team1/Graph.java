@@ -190,8 +190,7 @@ public class Graph<E> implements Iterable<E> {
 
 			next.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
-				if (!visited.contains(neighbor)) {
-					visited.add(neighbor);
+				if (visited.add(neighbor)) {
 					addToPool.accept(neighbor);
 				}
 			});
