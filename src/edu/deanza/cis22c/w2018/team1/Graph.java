@@ -175,7 +175,7 @@ public class Graph<E> {
 
 			nextVertex.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
-				if (!visited.contains(nextVertex)) {
+				if (!visited.contains(neighbor)) {
 					vertexQueue.enqueue(neighbor);
 				}
 			});
@@ -201,7 +201,7 @@ public class Graph<E> {
 
 			nextVertex.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
-				if (!visited.contains(nextVertex)) {
+				if (!visited.contains(neighbor)) {
 					vertexStack.push(neighbor);
 				}
 			});
