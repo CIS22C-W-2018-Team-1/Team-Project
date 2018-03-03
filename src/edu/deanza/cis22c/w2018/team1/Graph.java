@@ -4,6 +4,7 @@ import edu.deanza.cis22c.Pair;
 import edu.deanza.cis22c.QueueInterface;
 import edu.deanza.cis22c.StackInterface;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -79,7 +80,7 @@ class Vertex<E> {
 }
 
 //--- edu.deanza.cis22c.w2018.team1.Graph class ------------------------------------------------------
-public class Graph<E> {
+public class Graph<E> implements Iterable<E> {
 	// the graph data is all here --------------------------
 	protected HashMap<E, Vertex<E>> vertexSet;
 
@@ -160,19 +161,34 @@ public class Graph<E> {
 		vertexSet.clear();
 	}
 
-	private void doTraversal(Vertex<E> startVertex, Consumer<E> visitor,
-	                         Consumer<Vertex<E>> addToPool,
-	                         Supplier<Vertex<E>> pollPool,
-	                         BooleanSupplier isPoolEmpty) {
-		addToPool.accept(startVertex);
+	@Override
+	public Iterator<E> iterator() {
+		return breadthFirstIterator();
+	}
+
+	private class GraphIterator implements Iterator<E> {
+		Consumer<Vertex<E>> addToPool;
+		Supplier<Vertex<E>> pollPool;
+		BooleanSupplier isPoolEmpty;
 
 		Set<Vertex<E>> visited = new HashSet<>();
 
-		while (!isPoolEmpty.getAsBoolean()) {
+		GraphIterator(Consumer<Vertex<E>> addToPool, Supplier<Vertex<E>> pollPool, BooleanSupplier isPoolEmpty) {
+			this.addToPool = addToPool;
+			this.pollPool = pollPool;
+			this.isPoolEmpty = isPoolEmpty;
+		}
+
+		@Override
+		public boolean hasNext() {
+			return !isPoolEmpty.getAsBoolean();
+		}
+
+		@Override
+		public E next() {
 			Vertex<E> next = pollPool.get();
 
 			visited.add(next);
-			visitor.accept(next.getData());
 
 			next.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
@@ -180,31 +196,105 @@ public class Graph<E> {
 					addToPool.accept(neighbor);
 				}
 			});
+
+			return next.getData();
+		}
+	}
+
+	private Iterator<E> _breadthFirstIterator(Vertex<E> startVertex) {
+		QueueInterface<Vertex<E>> queue = new LinkedQueue<>();
+
+		queue.enqueue(startVertex);
+
+		return new GraphIterator(queue::enqueue, queue::dequeue, queue::isEmpty);
+	}
+
+	/**
+	 * Returns an iterator which iterates over the graph in
+	 * breadth-first order, starting at the specified element.
+	 *
+	 * @param   startElement   the element of the graph to iterate from
+	 * @return   an Iterator
+	 */
+	public Iterator<E> breadthFirstIterator(E startElement) {
+		Vertex<E> startVertex = vertexSet.get(startElement);
+		if (startVertex != null) {
+			return _breadthFirstIterator(startVertex);
+		} else {
+			return Collections.emptyIterator();
+		}
+	}
+
+	/**
+	 * Returns an iterator which iterates over the graph in
+	 * breadth-first order, starting at an arbitrary element.
+	 *
+	 * @return   an Iterator
+	 */
+	public Iterator<E> breadthFirstIterator() {
+		if (vertexSet.isEmpty()) {
+			return Collections.emptyIterator();
+		} else {
+			return _breadthFirstIterator(vertexSet.values().iterator().next());
+		}
+	}
+
+	private Iterator<E> _depthFirstIterator(Vertex<E> startVertex) {
+		StackInterface<Vertex<E>> stack = new LinkedStack<>();
+
+		stack.push(startVertex);
+
+		return new GraphIterator(stack::push, stack::pop, stack::isEmpty);
+	}
+
+	/**
+	 * Returns an iterator which iterates over the graph in
+	 * depth-first order, starting at the specified element.
+	 *
+	 * @param   startElement   the element of the graph to iterate from
+	 * @return   an Iterator
+	 */
+	public Iterator<E> depthFirstIterator(E startElement) {
+		Vertex<E> startVertex = vertexSet.get(startElement);
+		if (startVertex != null) {
+			return _depthFirstIterator(startVertex);
+		} else {
+			return Collections.emptyIterator();
+		}
+	}
+
+	/**
+	 * Returns an iterator which iterates over the graph in
+	 * depth-first order, starting at an arbitrary element.
+	 *
+	 * @return   an Iterator
+	 */
+	public Iterator<E> depthFirstIterator() {
+		if (vertexSet.isEmpty()) {
+			return Collections.emptyIterator();
+		} else {
+			return _depthFirstIterator(vertexSet.values().iterator().next());
 		}
 	}
 
 	/**
 	 * Breadth-first traversal from the parameter startElement
+	 *
+	 * @deprecated   use {@link #breadthFirstIterator(Object) breadthFirstIterator} instead
 	 */
+	@Deprecated
 	public void breadthFirstTraversal(E startElement, Consumer<E> visitor) {
-		Vertex<E> startVertex = vertexSet.get(startElement);
-
-		QueueInterface<Vertex<E>> queue = new LinkedQueue<>();
-
-		doTraversal(startVertex, visitor,
-				queue::enqueue, queue::dequeue, queue::isEmpty);
+		breadthFirstIterator(startElement).forEachRemaining(visitor);
 	}
 
 	/**
 	 * Depth-first traversal from the parameter startElement
+	 *
+	 * @deprecated   use {@link #depthFirstIterator(Object) depthFirstIterator} instead
 	 */
+	@Deprecated
 	public void depthFirstTraversal(E startElement, Consumer<E> visitor) {
-		Vertex<E> startVertex = vertexSet.get(startElement);
-
-		StackInterface<Vertex<E>> stack = new LinkedStack<>();
-
-		doTraversal(startVertex, visitor,
-				stack::push, stack::pop, stack::isEmpty);
+		depthFirstIterator(startElement).forEachRemaining(visitor);
 	}
 
 
