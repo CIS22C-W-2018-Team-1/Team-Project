@@ -1,6 +1,8 @@
 package edu.deanza.cis22c.w2018.team1;
 
 import edu.deanza.cis22c.Pair;
+import edu.deanza.cis22c.QueueInterface;
+import edu.deanza.cis22c.StackInterface;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,7 +10,9 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 // --- edu.deanza.cis22c.w2018.team1.Vertex class ------------------------------------------------------
 class Vertex<E> {
@@ -156,30 +160,39 @@ public class Graph<E> {
 		vertexSet.clear();
 	}
 
+	private void doTraversal(Vertex<E> startVertex, Consumer<E> visitor,
+	                         Consumer<Vertex<E>> addToPool,
+	                         Supplier<Vertex<E>> pollPool,
+	                         BooleanSupplier isPoolEmpty) {
+		addToPool.accept(startVertex);
+
+		Set<Vertex<E>> visited = new HashSet<>();
+
+		while (!isPoolEmpty.getAsBoolean()) {
+			Vertex<E> next = pollPool.get();
+
+			visited.add(next);
+			visitor.accept(next.getData());
+
+			next.iterator().forEachRemaining((e) -> {
+				Vertex<E> neighbor = e.getValue().first;
+				if (!visited.contains(neighbor)) {
+					addToPool.accept(neighbor);
+				}
+			});
+		}
+	}
+
 	/**
 	 * Breadth-first traversal from the parameter startElement
 	 */
 	public void breadthFirstTraversal(E startElement, Consumer<E> visitor) {
 		Vertex<E> startVertex = vertexSet.get(startElement);
 
-		LinkedQueue<Vertex<E>> vertexQueue = new LinkedQueue<>();
-		vertexQueue.enqueue(startVertex);
+		QueueInterface<Vertex<E>> queue = new LinkedQueue<>();
 
-		Set<Vertex<E>> visited = new HashSet<>();
-
-		while (!vertexQueue.isEmpty()) {
-			Vertex<E> nextVertex = vertexQueue.dequeue();
-
-			visited.add(nextVertex);
-			visitor.accept(nextVertex.getData());
-
-			nextVertex.iterator().forEachRemaining((e) -> {
-				Vertex<E> neighbor = e.getValue().first;
-				if (!visited.contains(neighbor)) {
-					vertexQueue.enqueue(neighbor);
-				}
-			});
-		}
+		doTraversal(startVertex, visitor,
+				queue::enqueue, queue::dequeue, queue::isEmpty);
 	}
 
 	/**
@@ -188,24 +201,10 @@ public class Graph<E> {
 	public void depthFirstTraversal(E startElement, Consumer<E> visitor) {
 		Vertex<E> startVertex = vertexSet.get(startElement);
 
-		LinkedStack<Vertex<E>> vertexStack = new LinkedStack<>();
-		vertexStack.push(startVertex);
+		StackInterface<Vertex<E>> stack = new LinkedStack<>();
 
-		Set<Vertex<E>> visited = new HashSet<>();
-
-		while (!vertexStack.isEmpty()) {
-			Vertex<E> nextVertex = vertexStack.pop();
-
-			visited.add(nextVertex);
-			visitor.accept(nextVertex.getData());
-
-			nextVertex.iterator().forEachRemaining((e) -> {
-				Vertex<E> neighbor = e.getValue().first;
-				if (!visited.contains(neighbor)) {
-					vertexStack.push(neighbor);
-				}
-			});
-		}
+		doTraversal(startVertex, visitor,
+				stack::push, stack::pop, stack::isEmpty);
 	}
 
 
