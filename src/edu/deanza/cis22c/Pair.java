@@ -7,7 +7,7 @@ public class Pair<L, R> {
 	public R second;
 
 	public Pair(L x, R y) {
-		first = x;
+		first  = x;
 		second = y;
 	}
 
@@ -16,7 +16,7 @@ public class Pair<L, R> {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Pair<?, ?> pair = (Pair<?, ?>) o;
-		return Objects.equals(first, pair.first) &&
+		return Objects.equals(first,  pair.first) &&
 		       Objects.equals(second, pair.second);
 	}
 
