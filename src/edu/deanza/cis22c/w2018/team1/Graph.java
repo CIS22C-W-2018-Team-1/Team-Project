@@ -223,8 +223,21 @@ public class Graph<E> {
 		}
 	} // end breadthFirstTraversalHelper
 
-	public void depthFirstTraversalHelper(Vertex<E> startVertex, Consumer<E> visitor) {
-		// YOU COMPLETE THIS (USE THE RECURSIVE ALGORITHM GIVEN FOR LESSON 11 EXERCISE)
+	protected void depthFirstTraversalHelper(Vertex<E> startVertex, Consumer<E> visitor) {
+		LinkedStack<Vertex<E>> vertexStack = new LinkedStack<>();
+		vertexStack.push(startVertex);
+
+		while (!vertexStack.isEmpty()) {
+			Vertex<E> nextVertex = vertexStack.pop();
+			nextVertex.visit();
+			visitor.accept(nextVertex.getData());
+			nextVertex.iterator().forEachRemaining((e) -> {
+				Vertex<E> neighbor = e.getValue().first;
+				if (!neighbor.isVisited()) {
+					vertexStack.push(neighbor);
+				}
+			});
+		}
 	}
 
 
