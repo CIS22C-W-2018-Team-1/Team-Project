@@ -5,7 +5,6 @@ import edu.deanza.cis22c.Pair;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
@@ -163,28 +162,23 @@ public class Graph<E> {
 	public void breadthFirstTraversal(E startElement, Consumer<E> visitor) {
 		Vertex<E> startVertex = vertexSet.get(startElement);
 
+		LinkedQueue<Vertex<E>> vertexQueue = new LinkedQueue<>();
+		vertexQueue.enqueue(startVertex);
+
 		Set<Vertex<E>> visited = new HashSet<>();
 
-		LinkedQueue<Vertex<E>> vertexQueue = new LinkedQueue<>();
-		E startData = startVertex.getData();
-
-		visited.add(startVertex);
-		visitor.accept(startData);
-		vertexQueue.enqueue(startVertex);
 		while (!vertexQueue.isEmpty()) {
 			Vertex<E> nextVertex = vertexQueue.dequeue();
-			Iterator<Map.Entry<E, Pair<Vertex<E>, Double>>> iter =
-					nextVertex.iterator(); // iterate adjacency list
 
-			while (iter.hasNext()) {
-				Entry<E, Pair<Vertex<E>, Double>> nextEntry = iter.next();
-				Vertex<E> neighborVertex = nextEntry.getValue().first;
-				if (!visited.contains(neighborVertex)) {
-					vertexQueue.enqueue(neighborVertex);
-					visited.add(neighborVertex);
-					visitor.accept(neighborVertex.getData());
+			visited.add(nextVertex);
+			visitor.accept(nextVertex.getData());
+
+			nextVertex.iterator().forEachRemaining((e) -> {
+				Vertex<E> neighbor = e.getValue().first;
+				if (!visited.contains(nextVertex)) {
+					vertexQueue.enqueue(neighbor);
 				}
-			}
+			});
 		}
 	}
 
@@ -201,8 +195,10 @@ public class Graph<E> {
 
 		while (!vertexStack.isEmpty()) {
 			Vertex<E> nextVertex = vertexStack.pop();
+
 			visited.add(nextVertex);
 			visitor.accept(nextVertex.getData());
+
 			nextVertex.iterator().forEachRemaining((e) -> {
 				Vertex<E> neighbor = e.getValue().first;
 				if (!visited.contains(nextVertex)) {
