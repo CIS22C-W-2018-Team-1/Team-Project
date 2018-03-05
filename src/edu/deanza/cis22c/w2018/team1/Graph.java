@@ -33,8 +33,8 @@ class Vertex<E> {
 		return data;
 	}
 
-	public Iterator<Entry<E, Pair<Vertex<E>, Double>>> iterator() {
-		return adjList.entrySet().iterator();
+	public Iterator<Pair<Vertex<E>, Double>> edges() {
+		return adjList.values().iterator();
 	}
 
 	public void addToAdjList(Vertex<E> neighbor, double cost) {
@@ -188,8 +188,8 @@ public class Graph<E> implements Iterable<E> {
 		public E next() {
 			Vertex<E> next = pollPool.get();
 
-			next.iterator().forEachRemaining((e) -> {
-				Vertex<E> neighbor = e.getValue().first;
+			next.edges().forEachRemaining((e) -> {
+				Vertex<E> neighbor = e.first;
 				if (visited.add(neighbor)) {
 					addToPool.accept(neighbor);
 				}
@@ -208,7 +208,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	/**
-	 * Returns an iterator which iterates over the graph in
+	 * Returns an edges which iterates over the graph in
 	 * breadth-first order, starting at the specified element.
 	 *
 	 * @param   startElement   the element of the graph to iterate from
@@ -224,7 +224,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	/**
-	 * Returns an iterator which iterates over the graph in
+	 * Returns an edges which iterates over the graph in
 	 * breadth-first order, starting at an arbitrary element.
 	 *
 	 * @return   an Iterator
@@ -246,7 +246,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	/**
-	 * Returns an iterator which iterates over the graph in
+	 * Returns an edges which iterates over the graph in
 	 * depth-first order, starting at the specified element.
 	 *
 	 * @param   startElement   the element of the graph to iterate from
@@ -262,7 +262,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	/**
-	 * Returns an iterator which iterates over the graph in
+	 * Returns an edges which iterates over the graph in
 	 * depth-first order, starting at an arbitrary element.
 	 *
 	 * @return   an Iterator
