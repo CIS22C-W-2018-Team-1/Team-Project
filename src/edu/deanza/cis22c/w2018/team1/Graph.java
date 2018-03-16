@@ -42,10 +42,6 @@ public class Graph<E> implements Iterable<E> {
 			// Note: if you want to change the cost, you'll need to remove it and then add it back
 		}
 
-		public void addToAdjList(Vertex<E> neighbor, int cost) {
-			addToAdjList(neighbor, (double) cost);
-		}
-
 		public void showAdjList() {
 			Iterator<Entry<E, Pair<Vertex<E>, Double>>> iter;
 			Entry<E, Pair<Vertex<E>, Double>> entry;
@@ -82,10 +78,6 @@ public class Graph<E> implements Iterable<E> {
 		// add dest to source's adjacency list
 		src.addToAdjList(dst, cost);
 		//dst.addToAdjList(src, cost); // ADD THIS IF UNDIRECTED GRAPH
-	}
-
-	public void addEdge(E source, E dest, int cost) {
-		addEdge(source, dest, (double) cost);
 	}
 
 	// adds vertex with x in it, and always returns ref to it
