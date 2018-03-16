@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -98,6 +99,10 @@ public class Graph<E> implements Iterable<E> {
 		vertexSet.put(x, retVal);
 
 		return retVal;   // should never happen
+	}
+
+	public Optional<Vertex<E>> getVertexIfPresent(E e) {
+		return Optional.ofNullable(vertexSet.get(e));
 	}
 
 	public boolean remove(E start, E end) {
