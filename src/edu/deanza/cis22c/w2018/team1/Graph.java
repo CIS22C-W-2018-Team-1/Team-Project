@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -45,19 +44,6 @@ class Vertex<E> {
 
 	public void addToAdjList(Vertex<E> neighbor, int cost) {
 		addToAdjList(neighbor, (double) cost);
-	}
-
-	public boolean equals(Object rhs) {
-		if (!(rhs instanceof Vertex<?>))
-			return false;
-		Vertex<?> other = (Vertex<?>) rhs;
-
-		return Objects.equals(data, other.data);
-
-	}
-
-	public int hashCode() {
-		return (data.hashCode());
 	}
 
 	public void showAdjList() {
