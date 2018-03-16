@@ -16,8 +16,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class Graph<E> implements Iterable<E> {
-	public class Vertex<E> {
-		private HashMap<E, Pair<Vertex<E>, Double>> adjList
+	public class Vertex {
+		private HashMap<E, Pair<Vertex, Double>> adjList
 				= new HashMap<>();
 		private E data;
 
@@ -33,20 +33,20 @@ public class Graph<E> implements Iterable<E> {
 			return data;
 		}
 
-		public Iterator<Pair<Vertex<E>, Double>> edges() {
+		public Iterator<Pair<Vertex, Double>> edges() {
 			return adjList.values().iterator();
 		}
 
-		public void addToAdjList(Vertex<E> neighbor, double cost) {
+		public void addToAdjList(Vertex neighbor, double cost) {
 			if (adjList.get(neighbor.data) == null)
 				adjList.put(neighbor.data, new Pair<>(neighbor, cost));
 			// Note: if you want to change the cost, you'll need to remove it and then add it back
 		}
 
 		public void showAdjList() {
-			Iterator<Entry<E, Pair<Vertex<E>, Double>>> iter;
-			Entry<E, Pair<Vertex<E>, Double>> entry;
-			Pair<Vertex<E>, Double> pair;
+			Iterator<Entry<E, Pair<Vertex, Double>>> iter;
+			Entry<E, Pair<Vertex, Double>> entry;
+			Pair<Vertex, Double> pair;
 
 			System.out.print("Adj List for " + data + ": ");
 			iter = adjList.entrySet().iterator();
@@ -62,7 +62,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	// the graph data is all here --------------------------
-	private HashMap<E, Vertex<E>> vertexSet;
+	private HashMap<E, Vertex> vertexSet;
 
 	// public graph methods --------------------------------
 	public Graph() {
@@ -70,7 +70,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	public void addEdge(E source, E dest, double cost) {
-		Vertex<E> src, dst;
+		Vertex src, dst;
 
 		// put both source and dest into vertex list(s) if not already there
 		src = addToVertexSet(source);
@@ -82,9 +82,9 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	// adds vertex with x in it, and always returns ref to it
-	public Vertex<E> addToVertexSet(E x) {
-		Vertex<E> retVal;
-		Vertex<E> foundVertex;
+	public Vertex addToVertexSet(E x) {
+		Vertex retVal;
+		Vertex foundVertex;
 
 		// find if edu.deanza.cis22c.w2018.team1.Vertex already in the list:
 		foundVertex = vertexSet.get(x);
@@ -95,22 +95,22 @@ public class Graph<E> implements Iterable<E> {
 		}
 
 		// the vertex not there, so create one
-		retVal = new Vertex<>(x);
+		retVal = new Vertex(x);
 		vertexSet.put(x, retVal);
 
 		return retVal;   // should never happen
 	}
 
-	public Optional<Vertex<E>> getVertexIfPresent(E e) {
+	public Optional<Vertex> getVertexIfPresent(E e) {
 		return Optional.ofNullable(vertexSet.get(e));
 	}
 
 	public boolean remove(E start, E end) {
-		Vertex<E> startVertex = vertexSet.get(start);
+		Vertex startVertex = vertexSet.get(start);
 		boolean removedOK = false;
 
 		if (startVertex != null) {
-			Pair<Vertex<E>, Double> endPair = startVertex.adjList.remove(end);
+			Pair<Vertex, Double> endPair = startVertex.adjList.remove(end);
 			removedOK = endPair != null;
 		}
 	   /*// Add if UNDIRECTED GRAPH:
@@ -126,7 +126,7 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	public void showAdjTable() {
-		Iterator<Entry<E, Vertex<E>>> iter;
+		Iterator<Entry<E, Vertex>> iter;
 
 		System.out.println("------------------------ ");
 		iter = vertexSet.entrySet().iterator();
@@ -147,13 +147,13 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	private class GraphIterator implements Iterator<E> {
-		Consumer<Vertex<E>> addToPool;
-		Supplier<Vertex<E>> pollPool;
+		Consumer<Vertex> addToPool;
+		Supplier<Vertex> pollPool;
 		BooleanSupplier isPoolEmpty;
 
-		Set<Vertex<E>> visited = new HashSet<>();
+		Set<Vertex> visited = new HashSet<>();
 
-		GraphIterator(Consumer<Vertex<E>> addToPool, Supplier<Vertex<E>> pollPool, BooleanSupplier isPoolEmpty) {
+		GraphIterator(Consumer<Vertex> addToPool, Supplier<Vertex> pollPool, BooleanSupplier isPoolEmpty) {
 			this.addToPool = addToPool;
 			this.pollPool = pollPool;
 			this.isPoolEmpty = isPoolEmpty;
@@ -166,10 +166,10 @@ public class Graph<E> implements Iterable<E> {
 
 		@Override
 		public E next() {
-			Vertex<E> next = pollPool.get();
+			Vertex next = pollPool.get();
 
 			next.edges().forEachRemaining((e) -> {
-				Vertex<E> neighbor = e.first;
+				Vertex neighbor = e.first;
 				if (visited.add(neighbor)) {
 					addToPool.accept(neighbor);
 				}
@@ -179,8 +179,8 @@ public class Graph<E> implements Iterable<E> {
 		}
 	}
 
-	private Iterator<E> _breadthFirstIterator(Vertex<E> startVertex) {
-		QueueInterface<Vertex<E>> queue = new LinkedQueue<>();
+	private Iterator<E> _breadthFirstIterator(Vertex startVertex) {
+		QueueInterface<Vertex> queue = new LinkedQueue<>();
 
 		queue.enqueue(startVertex);
 
@@ -195,7 +195,7 @@ public class Graph<E> implements Iterable<E> {
 	 * @return   an Iterator
 	 */
 	public Iterator<E> breadthFirstIterator(E startElement) {
-		Vertex<E> startVertex = vertexSet.get(startElement);
+		Vertex startVertex = vertexSet.get(startElement);
 		if (startVertex != null) {
 			return _breadthFirstIterator(startVertex);
 		} else {
@@ -217,8 +217,8 @@ public class Graph<E> implements Iterable<E> {
 		}
 	}
 
-	private Iterator<E> _depthFirstIterator(Vertex<E> startVertex) {
-		StackInterface<Vertex<E>> stack = new LinkedStack<>();
+	private Iterator<E> _depthFirstIterator(Vertex startVertex) {
+		StackInterface<Vertex> stack = new LinkedStack<>();
 
 		stack.push(startVertex);
 
@@ -233,7 +233,7 @@ public class Graph<E> implements Iterable<E> {
 	 * @return   an Iterator
 	 */
 	public Iterator<E> depthFirstIterator(E startElement) {
-		Vertex<E> startVertex = vertexSet.get(startElement);
+		Vertex startVertex = vertexSet.get(startElement);
 		if (startVertex != null) {
 			return _depthFirstIterator(startVertex);
 		} else {
