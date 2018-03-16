@@ -14,61 +14,58 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-// --- edu.deanza.cis22c.w2018.team1.Vertex class ------------------------------------------------------
-class Vertex<E> {
-	public HashMap<E, Pair<Vertex<E>, Double>> adjList
-			= new HashMap<>();
-	public E data;
-
-	public Vertex(E x) {
-		data = x;
-	}
-
-	public Vertex() {
-		this(null);
-	}
-
-	public E getData() {
-		return data;
-	}
-
-	public Iterator<Pair<Vertex<E>, Double>> edges() {
-		return adjList.values().iterator();
-	}
-
-	public void addToAdjList(Vertex<E> neighbor, double cost) {
-		if (adjList.get(neighbor.data) == null)
-			adjList.put(neighbor.data, new Pair<>(neighbor, cost));
-		// Note: if you want to change the cost, you'll need to remove it and then add it back
-	}
-
-	public void addToAdjList(Vertex<E> neighbor, int cost) {
-		addToAdjList(neighbor, (double) cost);
-	}
-
-	public void showAdjList() {
-		Iterator<Entry<E, Pair<Vertex<E>, Double>>> iter;
-		Entry<E, Pair<Vertex<E>, Double>> entry;
-		Pair<Vertex<E>, Double> pair;
-
-		System.out.print("Adj List for " + data + ": ");
-		iter = adjList.entrySet().iterator();
-		while (iter.hasNext()) {
-			entry = iter.next();
-			pair = entry.getValue();
-			System.out.print(pair.first.data + "("
-					+ String.format("%3.1f", pair.second)
-					+ ") ");
-		}
-		System.out.println();
-	}
-
-}
-
-//--- edu.deanza.cis22c.w2018.team1.Graph class ------------------------------------------------------
 public class Graph<E> implements Iterable<E> {
+	public class Vertex<E> {
+		private HashMap<E, Pair<Vertex<E>, Double>> adjList
+				= new HashMap<>();
+		private E data;
+
+		private Vertex(E x) {
+			data = x;
+		}
+
+		private Vertex() {
+			this(null);
+		}
+
+		public E getData() {
+			return data;
+		}
+
+		public Iterator<Pair<Vertex<E>, Double>> edges() {
+			return adjList.values().iterator();
+		}
+
+		public void addToAdjList(Vertex<E> neighbor, double cost) {
+			if (adjList.get(neighbor.data) == null)
+				adjList.put(neighbor.data, new Pair<>(neighbor, cost));
+			// Note: if you want to change the cost, you'll need to remove it and then add it back
+		}
+
+		public void addToAdjList(Vertex<E> neighbor, int cost) {
+			addToAdjList(neighbor, (double) cost);
+		}
+
+		public void showAdjList() {
+			Iterator<Entry<E, Pair<Vertex<E>, Double>>> iter;
+			Entry<E, Pair<Vertex<E>, Double>> entry;
+			Pair<Vertex<E>, Double> pair;
+
+			System.out.print("Adj List for " + data + ": ");
+			iter = adjList.entrySet().iterator();
+			while (iter.hasNext()) {
+				entry = iter.next();
+				pair = entry.getValue();
+				System.out.print(pair.first.data + "("
+						+ String.format("%3.1f", pair.second)
+						+ ") ");
+			}
+			System.out.println();
+		}
+	}
+
 	// the graph data is all here --------------------------
-	protected HashMap<E, Vertex<E>> vertexSet;
+	private HashMap<E, Vertex<E>> vertexSet;
 
 	// public graph methods --------------------------------
 	public Graph() {
