@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.UUID;
 
 public class GraphPanel extends JPanel {
@@ -27,6 +28,7 @@ public class GraphPanel extends JPanel {
 
 		private JMenuItem newNode;
 		private JMenuItem linkNodes;
+		private JMenuItem doMaxFlow;
 
 		public GraphRMouseMenu() {
 			newNode = new JMenuItem("New Node");
@@ -42,19 +44,19 @@ public class GraphPanel extends JPanel {
 			linkNodes.addActionListener((e) -> {
 				Double weight = Double.valueOf(JOptionPane.showInputDialog("Edge weight"));
 				Iterator<UUID> iter = selected.iterator();
-				UUID first = iter.next();
-				UUID second = iter.next();
+				UUID source = iter.next();
+				UUID dest = iter.next();
 
-				graph.addEdge(first, second, weight);
+				graph.addEdge(source, dest, weight);
 
-				Point firstPos = posData.get(first);
-				Point secondPos = posData.get(second);
+				Point sourcePos = posData.get(source);
+				Point destPos = posData.get(dest);
 
-				if (firstPos != null && secondPos != null) {
-					int redrawStartX = Math.min(firstPos.x, secondPos.x);
-					int redrawStartY = Math.min(firstPos.y, secondPos.y);
-					int redrawEndX = Math.max(firstPos.x, secondPos.x);
-					int redrawEndY = Math.max(firstPos.y, secondPos.y);
+				if (sourcePos != null && destPos != null) {
+					int redrawStartX = Math.min(sourcePos.x, destPos.x);
+					int redrawStartY = Math.min(sourcePos.y, destPos.y);
+					int redrawEndX = Math.max(sourcePos.x, destPos.x);
+					int redrawEndY = Math.max(sourcePos.y, destPos.y);
 
 					GraphPanel.this.repaint(redrawStartX - NODE_RADIUS, redrawStartY - NODE_RADIUS,
 					                        redrawEndX - redrawStartX + 4 * NODE_RADIUS,
@@ -62,6 +64,22 @@ public class GraphPanel extends JPanel {
 				}
 
 				selected.clear();
+			});
+
+			doMaxFlow = new JMenuItem("Compute Max Flow");
+			doMaxFlow.addActionListener((e) -> {
+				Iterator<UUID> iter = selected.iterator();
+				UUID source = iter.next();
+				UUID sink = iter.next();
+
+				OptionalDouble flow = MaxFlow.findMaximumFlow(graph, source, sink);
+
+				if (flow.isPresent()) {
+					JOptionPane.showMessageDialog(GraphPanel.this, String.valueOf(flow.getAsDouble()));
+				} else {
+					JOptionPane.showMessageDialog(GraphPanel.this, "Cannot find valid flow",
+							"Error", JOptionPane.ERROR_MESSAGE);
+				}
 			});
 
 			addPopupMenuListener(new PopupMenuListener() {
@@ -82,6 +100,7 @@ public class GraphPanel extends JPanel {
 				add(newNode);
 			} else if (selected.size() == 2) {
 				add(linkNodes);
+				add(doMaxFlow);
 			}
 		}
 	}
