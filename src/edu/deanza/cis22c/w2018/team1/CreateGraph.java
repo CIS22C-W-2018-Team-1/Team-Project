@@ -2,11 +2,13 @@ package edu.deanza.cis22c.w2018.team1;
 
 public class CreateGraph {
 	public staic void main(String[] args) {
-		Gson gson = new Gson();
 	}
 	
-	private static voidSerializeGraph() {
+	private static void serializeGraph() {
+		Graph graph = new Graph();
 		
+		Gson gson = new Gson();
+		String json = gson.toJson(graph);
 	}
 	
 	private static void deserializeGraph() {
