@@ -53,8 +53,8 @@ public class Graph<E> implements Iterable<E> {
 			while (iter.hasNext()) {
 				entry = iter.next();
 				pair = entry.getValue();
-				System.out.print(pair.first.data + "("
-						+ String.format("%3.1f", pair.second)
+				System.out.print(pair.getLeft().data + "("
+						+ String.format("%3.1f", pair.getRight())
 						+ ") ");
 			}
 			System.out.println();
@@ -169,7 +169,7 @@ public class Graph<E> implements Iterable<E> {
 			Vertex next = pollPool.get();
 
 			next.edges().forEachRemaining((e) -> {
-				Vertex neighbor = e.first;
+				Vertex neighbor = e.getLeft();
 				if (visited.add(neighbor)) {
 					addToPool.accept(neighbor);
 				}
