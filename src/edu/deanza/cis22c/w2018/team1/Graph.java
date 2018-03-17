@@ -206,7 +206,7 @@ public class Graph<E> implements Iterable<E> {
 
 	@Override
 	public Iterator<E> iterator() {
-		return breadthFirstIterator();
+		return vertexSet.keySet().iterator();
 	}
 
 	private class GraphIterator implements Iterator<E> {
