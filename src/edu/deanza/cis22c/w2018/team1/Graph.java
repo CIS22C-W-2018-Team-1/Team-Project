@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -37,7 +38,56 @@ public class Graph<E> implements Iterable<E> {
 			return adjList.values().iterator();
 		}
 
-		public void addToAdjList(Vertex neighbor, double cost) {
+		public OptionalDouble getEdgeWeightWith(E e) {
+			Pair<Vertex, Double> edge = adjList.get(e);
+			return edge == null ? OptionalDouble.empty() : OptionalDouble.of(edge.getRight());
+		}
+
+		public boolean setEdgeWeightWith(E destination, double weight) {
+			Pair<Vertex, Double> edge = adjList.get(destination);
+
+			if (edge == null) { return false; }
+
+			edge.setRight(weight);
+
+			return true;
+		}
+
+		public void setOrCreateEdgeWith(E destination, double weight) {
+			Pair<Vertex, Double> edge = adjList.get(destination);
+
+			if (edge != null) {
+				edge.setRight(weight);
+			} else {
+				Vertex vDest = Graph.this.getVertexIfPresent(destination)
+						.orElseThrow(()-> new IllegalArgumentException("Node with value " + destination + " does not exist"));
+
+				addToAdjList(vDest, weight);
+			}
+		}
+
+		public void setOrCreateEdgeWith(Vertex destination, double weight) {
+			Pair<Vertex, Double> edge = adjList.get(destination.getData());
+
+			if (edge != null) {
+				edge.setRight(weight);
+			} else {
+				addToAdjList(destination, weight);
+			}
+		}
+
+		public boolean removeEdgeWith(E destination) {
+			if (!Graph.this.vertexSet.containsKey(destination)) {
+				throw new IllegalArgumentException("Node with value " + destination + " does not exist");
+			}
+			return adjList.remove(destination) != null;
+		}
+
+		public boolean removeEdgeWith(Vertex destination) {
+			return removeEdgeWith(destination.getData());
+		}
+
+		private void addToAdjList(Vertex neighbor, double cost) {
 			if (adjList.get(neighbor.data) == null)
 				adjList.put(neighbor.data, new Pair<>(neighbor, cost));
 			// Note: if you want to change the cost, you'll need to remove it and then add it back
@@ -67,6 +117,19 @@ public class Graph<E> implements Iterable<E> {
 	// public graph methods --------------------------------
 	public Graph() {
 		vertexSet = new HashMap<>();
+	}
+
+	/**
+	 * Creates a graph which is a copy of the original
+	 *
+	 * @param   original   the original to copy
+	 */
+	public Graph(Graph<E> original) {
+		for (Vertex v: original.vertexSet.values()) {
+			for (Pair<Vertex, Double> edge: v.adjList.values()) {
+				addEdge(v.data, edge.getLeft().data, edge.getRight());
+			}
+		}
 	}
 
 	public void addEdge(E source, E dest, double cost) {
