@@ -2,8 +2,6 @@ package edu.deanza.cis22c.w2018.team1;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,9 +20,9 @@ public class GraphPanel extends JPanel {
 
 	private static final int NODE_RADIUS = 25;
 
-	private class GraphRMouseMenu extends JPopupMenu {
+	private Point locCache;
 
-		private Point locCache = null;
+	private class GraphRMouseMenu extends JPopupMenu {
 
 		private JMenuItem newNode;
 		private JMenuItem linkNodes;
@@ -35,8 +33,7 @@ public class GraphPanel extends JPanel {
 			newNode.addActionListener((e) -> {
 				UUID node = UUID.randomUUID();
 				graph.addToVertexSet(node);
-				Point panelLoc = GraphPanel.this.getLocationOnScreen();
-				posData.put(node, new Point(locCache.x - panelLoc.x, locCache.y - panelLoc.y));
+				posData.put(node, new Point(locCache.x - NODE_RADIUS, locCache.y - NODE_RADIUS));
 				GraphPanel.this.repaint();
 			});
 
@@ -81,16 +78,6 @@ public class GraphPanel extends JPanel {
 							"Error", JOptionPane.ERROR_MESSAGE);
 				}
 			});
-
-			addPopupMenuListener(new PopupMenuListener() {
-				@Override public void popupMenuWillBecomeVisible(PopupMenuEvent e) { }
-				@Override public void popupMenuCanceled(PopupMenuEvent e) { }
-
-				@Override
-				public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-					locCache = getLocationOnScreen();
-				}
-			});
 		}
 
 		public void updateItems() {
@@ -123,6 +110,7 @@ public class GraphPanel extends JPanel {
 						selectNode(node, posData.get(node));
 					}
 				}
+				locCache = e.getPoint();
 				menu.updateItems();
 				menu.show(GraphPanel.this, e.getX(), e.getY());
 			}
@@ -166,20 +154,22 @@ public class GraphPanel extends JPanel {
 			public void mouseClicked(MouseEvent e) {
 				super.mouseClicked(e);
 
-				if (!e.isShiftDown() && !selected.isEmpty()) {
-					for (UUID node: selected) {
-						Point p = posData.get(node);
+				if (e.getButton() == 1) {
+					if (!e.isShiftDown() && !selected.isEmpty()) {
+						for (UUID node : selected) {
+							Point p = posData.get(node);
 
-						repaint(p.x - NODE_RADIUS, p.y - NODE_RADIUS, 4*NODE_RADIUS, 4*NODE_RADIUS);
+							repaint(p.x - NODE_RADIUS, p.y - NODE_RADIUS, 4 * NODE_RADIUS, 4 * NODE_RADIUS);
+						}
+						selected.clear();
 					}
-					selected.clear();
-				}
 
-				UUID node = getNodeUnderMouse(e);
+					UUID node = getNodeUnderMouse(e);
 
-				if (node != null) {
-					Point pos = posData.get(node);
-					selectNode(node, pos);
+					if (node != null) {
+						Point pos = posData.get(node);
+						selectNode(node, pos);
+					}
 				}
 			}
 		});
