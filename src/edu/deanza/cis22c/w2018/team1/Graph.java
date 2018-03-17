@@ -112,12 +112,10 @@ public class Graph<E> implements Iterable<E> {
 	}
 
 	// the graph data is all here --------------------------
-	private HashMap<E, Vertex> vertexSet;
+	private HashMap<E, Vertex> vertexSet = new HashMap<>();
 
 	// public graph methods --------------------------------
-	public Graph() {
-		vertexSet = new HashMap<>();
-	}
+	public Graph() { }
 
 	/**
 	 * Creates a graph which is a copy of the original

@@ -3,9 +3,7 @@ package edu.deanza.cis22c.w2018.team1;
 import edu.deanza.cis22c.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.PriorityQueue;
 import java.util.Set;
 
 public class MaxFlow {
@@ -24,18 +21,20 @@ public class MaxFlow {
 		int level = 1;
 		List<Graph<E>.Vertex> currentLevel = Collections.singletonList(source);
 		List<Graph<E>.Vertex> nextLevel = new ArrayList<>();
-		while (!nextLevel.isEmpty()) {
+		while (!currentLevel.isEmpty()) {
 			final int lvl = level;
+			final List<Graph<E>.Vertex> next = nextLevel;
 			for (Graph<E>.Vertex vertex: currentLevel) {
 				vertex.edges().forEachRemaining((e) -> {
 					if (!levels.containsKey(e.getLeft().getData())) {
-						nextLevel.add(e.getLeft());
+						next.add(e.getLeft());
 						levels.put(e.getLeft().getData(), lvl);
 					}
 				});
 			}
 			++level;
 			currentLevel = nextLevel;
+			nextLevel = new ArrayList<>();
 		}
 		return levels;
 	}
@@ -51,7 +50,7 @@ public class MaxFlow {
 		flowAtVertex.put(source, Double.POSITIVE_INFINITY);
 
 		Graph<E>.Vertex currentVertex = source;
-		double flowCache = Double.NaN;
+		double flowCache = Double.POSITIVE_INFINITY;
 		while (currentVertex != null && currentVertex != dest) {
 			Iterator<Pair<Graph<E>.Vertex, Double>> edges = currentVertex.edges();
 
@@ -64,7 +63,9 @@ public class MaxFlow {
 
 			if (!nextEdge.isPresent()) {
 				currentVertex = backtrackMap.get(currentVertex);
-				flowCache = flowAtVertex.get(currentVertex);
+				if (currentVertex != null) {
+					flowCache = flowAtVertex.get(currentVertex);
+				}
 			} else {
 				Graph<E>.Vertex nextVertex = nextEdge.get().getLeft();
 				double edgeFlow = nextEdge.get().getRight();
@@ -122,8 +123,8 @@ public class MaxFlow {
 		Graph<E> residualGraph = new Graph<>(graph);
 
 		Optional<Graph<E>.Vertex> oSource, oDest;
-		oSource = graph.getVertexIfPresent(source);
-		oDest   = graph.getVertexIfPresent(dest);
+		oSource = residualGraph.getVertexIfPresent(source);
+		oDest   = residualGraph.getVertexIfPresent(dest);
 
 		Graph<E>.Vertex vSource, vDest;
 		vSource = oSource.orElseThrow(()-> new IllegalArgumentException("Node with value " + source + " does not exist"));
