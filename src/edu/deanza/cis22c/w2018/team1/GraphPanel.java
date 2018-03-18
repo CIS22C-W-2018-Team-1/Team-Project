@@ -32,7 +32,7 @@ public class GraphPanel extends JPanel {
 			newNode = new JMenuItem("New Node");
 			newNode.addActionListener((e) -> {
 				UUID node = UUID.randomUUID();
-				graph.addToVertexSet(node);
+				graph.getOrCreateVertex(node);
 				posData.put(node, new Point(locCache.x - NODE_RADIUS, locCache.y - NODE_RADIUS));
 				GraphPanel.this.repaint();
 			});
@@ -44,7 +44,9 @@ public class GraphPanel extends JPanel {
 				UUID source = iter.next();
 				UUID dest = iter.next();
 
-				graph.addEdge(source, dest, weight);
+				Graph<UUID>.Vertex vSource = graph.getOrCreateVertex(source);
+				Graph<UUID>.Vertex vDest   = graph.getOrCreateVertex(dest);
+				vSource.createOrUpdateEdgeTo(vDest, weight);
 
 				Point sourcePos = posData.get(source);
 				Point destPos = posData.get(dest);
@@ -203,10 +205,10 @@ public class GraphPanel extends JPanel {
 		for (UUID vertex: graph) {
 			Vector2 sourcePos = new Vector2(NODE_RADIUS, NODE_RADIUS).plus(posData.get(vertex));
 			AffineTransform tx = new AffineTransform();
-			graph.getVertexIfPresent(vertex).get().edges().forEachRemaining((edge) -> {
+			for (Graph<UUID>.Edge edge: graph.getVertex(vertex).get().outgoingEdges()) {
 				Graphics2D localContext = (Graphics2D) g2d.create();
 
-				Vector2 destPos = new Vector2(NODE_RADIUS, NODE_RADIUS).plus(posData.get(edge.getLeft().getData()));
+				Vector2 destPos = new Vector2(NODE_RADIUS, NODE_RADIUS).plus(posData.get(edge.getDestination().getId()));
 
 				Vector2 offset = destPos.minus(sourcePos).normalized().times(NODE_RADIUS);
 				Vector2 edgeStart = sourcePos.plus(offset);
@@ -224,7 +226,7 @@ public class GraphPanel extends JPanel {
 					textOffset = textOffset.times(-1);
 				}
 				Vector2 textPos = edgeCenter.plus(textOffset);
-				localContext.drawString(String.valueOf(edge.getRight()), (float) textPos.getX(), (float) textPos.getY());
+				localContext.drawString(String.valueOf(edge.getWeight()), (float) textPos.getX(), (float) textPos.getY());
 
 				tx.setToIdentity();
 				tx.translate(edgeEnd.getX(), edgeEnd.getY());
@@ -232,7 +234,7 @@ public class GraphPanel extends JPanel {
 
 				localContext.transform(tx);
 				localContext.fill(arrowHead);
-			});
+			}
 		}
 
 		for (UUID vertex: graph) {
