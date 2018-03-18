@@ -87,6 +87,16 @@ public class Graph<E> implements Iterable<E> {
 			return Optional.ofNullable(outgoingEdges.get(destination));
 		}
 
+		/**
+		 * Remove this vertex and all connected edges from the graph.
+		 */
+		public void remove() {
+			incomingEdges().forEach(Edge::remove);
+			outgoingEdges().forEach(Edge::remove);
+
+			Graph.this.vertexSet.remove(id, this);
+		}
+
 		private boolean isOwnedBy(Graph<E> graph) {
 			return Graph.this == graph;
 		}
@@ -150,6 +160,9 @@ public class Graph<E> implements Iterable<E> {
 			return destination;
 		}
 
+		/**
+		 * Removes this edge from the graph.
+		 */
 		public void remove() {
 			source.outgoingEdges.remove(destination);
 			destination.outgoingEdges.remove(source);
