@@ -12,8 +12,11 @@ public class CreateGraph {
 	private static void serializeGraph() {
 		Graph<String> graph = new Graph<String>();
 
-		graph.addEdge("a", "b", 3);
-		graph.addEdge("b", "a", 8);
+		Graph<String>.Vertex a = graph.getOrCreateVertex("a");
+		Graph<String>.Vertex b = graph.getOrCreateVertex("b");
+
+		a.createOrUpdateEdgeTo(b, 3);
+		b.createOrUpdateEdgeTo(a, 8);
 
 		Gson g = new Gson();
 		String json = g.toJson(graph);

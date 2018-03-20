@@ -3,12 +3,12 @@ package edu.deanza.cis22c;
 import java.util.Objects;
 
 public class Pair<L, R> {
-	public L first;
-	public R second;
+	private L left;
+	private R right;
 
-	public Pair(L x, R y) {
-		first  = x;
-		second = y;
+	public Pair(L left, R right) {
+		this.left  = left;
+		this.right = right;
 	}
 
 	@Override
@@ -16,12 +16,28 @@ public class Pair<L, R> {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Pair<?, ?> pair = (Pair<?, ?>) o;
-		return Objects.equals(first,  pair.first) &&
-		       Objects.equals(second, pair.second);
+		return Objects.equals(left, pair.left) &&
+		       Objects.equals(left, pair.right);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(first, second);
+		return Objects.hash(left, right);
+	}
+
+	public L getLeft() {
+		return left;
+	}
+
+	public void setLeft(L left) {
+		this.left = left;
+	}
+
+	public R getRight() {
+		return right;
+	}
+
+	public void setRight(R right) {
+		this.right = right;
 	}
 }
