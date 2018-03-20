@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.UUID;
 
@@ -32,6 +33,7 @@ public class GraphPanel extends JPanel {
 	private class GraphRMouseMenu extends JPopupMenu {
 
 		private JMenuItem newNode;
+		private JMenuItem deleteNodes;
 		private JMenuItem linkNodes;
 		private JMenuItem doMaxFlow;
 
@@ -41,6 +43,21 @@ public class GraphPanel extends JPanel {
 				UUID node = UUID.randomUUID();
 				graph.getOrCreateVertex(node);
 				posData.put(node, new Point(locCache.x - NODE_RADIUS, locCache.y - NODE_RADIUS));
+				GraphPanel.this.repaint();
+			});
+
+			deleteNodes = new JMenuItem("Delete Nodes");
+			deleteNodes.addActionListener((e) -> {
+				selected.stream()
+						.map(graph::getVertex)
+						.filter(Optional::isPresent)
+						.map(Optional::get)
+						.forEachOrdered(Graph.Vertex::remove);
+
+				selected.forEach(posData::remove);
+
+				selected.clear();
+
 				GraphPanel.this.repaint();
 			});
 
@@ -92,10 +109,23 @@ public class GraphPanel extends JPanel {
 		public void updateItems() {
 			removeAll();
 
+			if (selected.size() == 2) {
+				add(linkNodes);
+			}
+
 			if (selected.isEmpty()) {
 				add(newNode);
-			} else if (selected.size() == 2) {
-				add(linkNodes);
+			} else {
+				if (selected.size() == 1) {
+					deleteNodes.setText("Delete Node");
+				} else {
+					deleteNodes.setText("Delete Nodes");
+				}
+
+				add(deleteNodes);
+			}
+
+			if (selected.size() == 2) {
 				add(doMaxFlow);
 			}
 		}
