@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
@@ -246,6 +247,10 @@ public class Graph<E> implements Iterable<E> {
 	 */
 	public Iterator<E> iterator() {
 		return vertexSet.keySet().iterator();
+	}
+
+	public Map<E, Vertex> vertices() {
+		return Collections.unmodifiableMap(vertexSet);
 	}
 
 	private class GraphIterator implements Iterator<E> {
