@@ -91,8 +91,8 @@ public class Graph<E> implements Iterable<E> {
 		 * Remove this vertex and all connected edges from the graph.
 		 */
 		public void remove() {
-			incomingEdges().forEach(Edge::remove);
-			outgoingEdges().forEach(Edge::remove);
+			incomingEdges().forEach((e) -> e.getSource().outgoingEdges.remove(this));
+			outgoingEdges().forEach((e) -> e.getDestination().incomingEdges.remove(this));
 
 			Graph.this.vertexSet.remove(id, this);
 		}
