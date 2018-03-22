@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import edu.deanza.cis22c.Pair;
 import edu.deanza.cis22c.w2018.team1.swing.ContextMenu;
 import edu.deanza.cis22c.w2018.team1.swing.EdgeTool;
@@ -15,7 +14,16 @@ import edu.deanza.cis22c.w2018.team1.swing.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.OrderedMouseListener;
 import edu.deanza.cis22c.w2018.team1.swing.PredicateDecorator;
 
-import javax.swing.*;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.OverlayLayout;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -25,7 +33,6 @@ import java.awt.geom.Rectangle2D;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -300,7 +307,7 @@ public class Main implements Runnable {
 
 	@Override
 	public void run() {
-		JFrame frame = buildGraphFrame(UUID::randomUUID, UUID.class);
+		JFrame frame = buildGraphFrame(() -> UUID.randomUUID().toString(), String.class);
 		frame.setSize(800, 600);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setVisible(true);
