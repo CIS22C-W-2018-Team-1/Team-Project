@@ -39,7 +39,7 @@ public class Vector2 {
 		return new Vector2(x + o.x, y + o.y);
 	}
 
-	public Vector2 plus(Point p) {
+	public Vector2 plus(Point2D p) {
 		return plus(new Vector2(p));
 	}
 
@@ -47,7 +47,7 @@ public class Vector2 {
 		return new Vector2(x - o.x, y - o.y);
 	}
 
-	public Vector2 minus(Point p) {
+	public Vector2 minus(Point2D p) {
 		return minus(new Vector2(p));
 	}
 
