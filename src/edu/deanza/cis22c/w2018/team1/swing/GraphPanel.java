@@ -230,7 +230,7 @@ public class GraphPanel<E> extends JPanel {
 	}
 
 	public Pair<Stroke, Color> getStyleFor(Graph<E>.Vertex vertex) {
-		return decoratorLadder(vertexDecorators, vertexStyle, new Pair<>(vertex, positionTable.get(vertex)));
+		return decoratorLadder(vertexDecorators, vertexStyle, new Pair<>(vertex, positionTable.get(vertex.getId())));
 	}
 
 	public Pair<Stroke, Color> getStyleFor(Graph<E>.Edge edge) {
