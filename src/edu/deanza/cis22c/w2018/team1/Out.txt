@@ -1,6 +1,0 @@
-Adj List for Dude: Man(4.0)
-Adj List for Help: 
-Adj List for Test: 
-Adj List for Dumb: 
-Adj List for Lol: Test(6.0)
-Adj List for Man: 
