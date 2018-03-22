@@ -94,7 +94,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 				posCache = new HashMap<>();
 
 				selection.forEach((vert) -> {
-					Optional<Point2D> oPos = pane.getVertexPosition(vert);
+					Optional<Point2D> oPos = pane.getVertexPosition(vert.getId());
 					oPos.ifPresent((pos) -> posCache.put(vert, pos));
 				});
 			}
@@ -120,7 +120,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 			Vector2 dP = mousePos.minus(dragStart);
 			selection.forEach((vertex) ->
 				Optional.of(posCache.get(vertex))
-				        .ifPresent((pos) -> pane.setVertexPosition(vertex, dP.plus(pos).asPoint()))
+				        .ifPresent((pos) -> pane.setVertexPosition(vertex.getId(), dP.plus(pos).asPoint()))
 			);
 			pane.repaint();
 		} else {
@@ -137,9 +137,11 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		dragStart = null;
 
 		if (selecting != null) {
-			pane.getPositionTable().forEach((vert, point) -> {
-				if (selecting.contains(point)) { selection.add(vert); }
-			});
+			pane.getPositionTable().entrySet().stream()
+					.filter((entry) -> selecting.contains(entry.getValue()))
+					.map(Map.Entry::getKey)
+					.map(pane.getGraph()::getVertex)
+					.forEachOrdered((o) -> o.ifPresent(selection::add));
 
 			pane.repaint();
 			selecting = null;

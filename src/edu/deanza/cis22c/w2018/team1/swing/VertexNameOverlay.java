@@ -27,7 +27,7 @@ public class VertexNameOverlay<E> extends JPanel {
 		Graphics2D g2d = (Graphics2D) g;
 
 		graphPanel.getGraph().vertices().values().forEach( (vertex) ->
-			graphPanel.getVertexPosition(vertex).ifPresent( (p) -> {
+			graphPanel.getVertexPosition(vertex.getId()).ifPresent( (p) -> {
 				Pair<Stroke, Color> style = graphPanel.getStyleFor(vertex);
 
 				g2d.setStroke(style.getLeft());

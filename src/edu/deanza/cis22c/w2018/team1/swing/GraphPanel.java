@@ -19,16 +19,17 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.WeakHashMap;
+import java.util.HashMap;
 import java.util.function.Function;
 
 public class GraphPanel<E> extends JPanel {
 	private Graph<E> graph;
-	private WeakHashMap<Graph<E>.Vertex, Point2D> positionTable;
+	private HashMap<E, Point2D> positionTable;
 	private List<Function<Pair<Graph<E>.Vertex, Point2D>, Optional<Pair<Stroke, Color>>>> vertexDecorators = new LinkedList<>();
 	private List<Function<Graph<E>.Edge, Optional<Pair<Stroke, Color>>>> edgeDecorators = new LinkedList<>();
 	private double vertexRadius = 25;
@@ -39,7 +40,7 @@ public class GraphPanel<E> extends JPanel {
 	private Pair<Stroke, Color> edgeStyle = new Pair<>(new BasicStroke(2), Color.BLACK);
 
 	public GraphPanel() {
-		positionTable = new WeakHashMap<>();
+		positionTable = new HashMap<>();
 
 		setBackground(Color.WHITE);
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
@@ -48,7 +49,7 @@ public class GraphPanel<E> extends JPanel {
 	public GraphPanel(Graph<E> graph) {
 		this.graph = graph;
 
-		positionTable = new WeakHashMap<>();
+		positionTable = new HashMap<>();
 
 		setBackground(Color.WHITE);
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
@@ -58,23 +59,23 @@ public class GraphPanel<E> extends JPanel {
 		this.graph = graph;
 		this.vertexRadius = vertexRadius;
 
-		positionTable = new WeakHashMap<>();
+		positionTable = new HashMap<>();
 
 		setBackground(Color.WHITE);
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
 	}
 
-	public GraphPanel(Graph<E> graph, Map<Graph<E>.Vertex, Point2D> positionTable) {
+	public GraphPanel(Graph<E> graph, Map<E, Point2D> positionTable) {
 		this.graph = graph;
-		this.positionTable = new WeakHashMap<>(positionTable);
+		this.positionTable = new HashMap<>(positionTable);
 
 		setBackground(Color.WHITE);
 		setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
 	}
 
-	public GraphPanel(Graph<E> graph, Map<Graph<E>.Vertex, Point2D> positionTable, double vertexRadius) {
+	public GraphPanel(Graph<E> graph, Map<E, Point2D> positionTable, double vertexRadius) {
 		this.graph = graph;
-		this.positionTable = new WeakHashMap<>(positionTable);
+		this.positionTable = new HashMap<>(positionTable);
 		this.vertexRadius = vertexRadius;
 
 		setBackground(Color.WHITE);
@@ -83,13 +84,6 @@ public class GraphPanel<E> extends JPanel {
 
 	public void setGraph(Graph<E> graph) {
 		this.graph = graph;
-
-		positionTable = new WeakHashMap<>();
-	}
-
-	public void setGraph(Graph<E> graph, Map<Graph<E>.Vertex, Point2D> positionTable) {
-		this.graph = graph;
-		this.positionTable = new WeakHashMap<>(positionTable);
 	}
 
 	public Graph<E> getGraph() {
@@ -122,15 +116,15 @@ public class GraphPanel<E> extends JPanel {
 		return vertexRadius;
 	}
 
-	public void setVertexPosition(Graph<E>.Vertex vertex, Point2D pos) {
+	public void setVertexPosition(E vertex, Point2D pos) {
 		positionTable.put(vertex, new Point2D.Double(pos.getX(), pos.getY()));
 	}
 
-	public void addPositionData(Map<Graph<E>.Vertex, Point2D> data) {
+	public void addPositionData(Map<E, Point2D> data) {
 		positionTable.putAll(data);
 	}
 
-	public Optional<Point2D> getVertexPosition(Graph<E>.Vertex vertex) {
+	public Optional<Point2D> getVertexPosition(E vertex) {
 		return Optional.ofNullable(positionTable.get(vertex));
 	}
 
@@ -140,16 +134,16 @@ public class GraphPanel<E> extends JPanel {
 
 	public Optional<Graph<E>.Vertex> getVertexNear(Point2D point, double epsilon) {
 		// TODO: Replace with some form of spacial partitioning for efficiency reasons
-		for (Map.Entry<Graph<E>.Vertex, Point2D> entry: positionTable.entrySet()) {
+		for (Map.Entry<E, Point2D> entry: positionTable.entrySet()) {
 			if (new Vector2(point).minus(entry.getValue()).magnitude() < epsilon) {
-				return Optional.of(entry.getKey());
+				return graph.getVertex(entry.getKey());
 			}
 		}
 
 		return Optional.empty();
 	}
 
-	public Map<Graph<E>.Vertex, Point2D> getPositionTable() {
+	public Map<E, Point2D> getPositionTable() {
 		return Collections.unmodifiableMap(positionTable);
 	}
 
@@ -244,8 +238,8 @@ public class GraphPanel<E> extends JPanel {
 	}
 
 	public Optional<Line2D> getEdgeLine(Graph<E>.Edge edge) {
-		return Optional.ofNullable(positionTable.get(edge.getSource())).map(Vector2::new).flatMap((sourcePos) ->
-			Optional.ofNullable(positionTable.get(edge.getDestination())).map(Vector2::new).map((destPos) -> {
+		return Optional.ofNullable(positionTable.get(edge.getSource().getId())).map(Vector2::new).flatMap((sourcePos) ->
+			Optional.ofNullable(positionTable.get(edge.getDestination().getId())).map(Vector2::new).map((destPos) -> {
 				Vector2 offset = destPos.minus(sourcePos).normalized().times(vertexRadius);
 
 				return new Line2D.Double(sourcePos.plus(offset).asPoint(), destPos.minus(offset).asPoint());
@@ -272,11 +266,10 @@ public class GraphPanel<E> extends JPanel {
 		AffineTransform clearTx = g2d.getTransform();
 
 		for (Graph<E>.Vertex vertex: graph.vertices().values()) {
-			Point2D vertexPos = positionTable.get(vertex);
+			Point2D vertexPos = positionTable.get(vertex.getId());
 
 			if (vertexPos == null) { continue; }
 
-			Vector2 sourcePos = new Vector2(vertexPos);
 			AffineTransform tx = new AffineTransform();
 			for (Graph<E>.Edge edge: vertex.outgoingEdges()) {
 				getEdgeLine(edge).ifPresent((edgeLine) -> {
@@ -306,7 +299,7 @@ public class GraphPanel<E> extends JPanel {
 		}
 
 		for (Graph<E>.Vertex vertex: graph.vertices().values()) {
-			Point2D p = positionTable.get(vertex);
+			Point2D p = positionTable.get(vertex.getId());
 
 			if (p == null || !clipBound.contains(p)) {
 				continue;

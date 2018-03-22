@@ -86,7 +86,7 @@ public class Main implements Runnable {
 
 		JMenuItem newNode = rightClickMenu.addMenuItem(Set::isEmpty, (e) -> {
 			Graph<E>.Vertex vertex = pane.getGraph().getOrCreateVertex(vertIdSupplier.get());
-			pane.setVertexPosition(vertex, e.getLocation());
+			pane.setVertexPosition(vertex.getId(), e.getLocation());
 			pane.repaint();
 		});
 		newNode.setText("New Node");
@@ -198,11 +198,11 @@ public class Main implements Runnable {
 			if (ret == JFileChooser.APPROVE_OPTION) {
 				File in = fileChooser.getSelectedFile();
 				try (BufferedReader reader = new BufferedReader(new FileReader(in))) {
-					Pair<Graph<E>, Map<Graph<E>.Vertex, Point2D>> data = readFile(reader, elemType);
+					Pair<Graph<E>, Map<E, Point2D>> data = readFile(reader, elemType);
 					pane.setGraph(data.getLeft());
 					pane.addPositionData(data.getRight());
 
-					pane.getGraph().vertices().values().forEach((v) -> {
+					pane.getGraph().vertices().values().stream().map(Graph.Vertex::getId).forEachOrdered((v) -> {
 						if (!pane.getVertexPosition(v).isPresent()) {
 							pane.setVertexPosition(v, new Point2D.Double(0, 0));
 						}
@@ -288,7 +288,7 @@ public class Main implements Runnable {
 		gson = gBuilder.create();
 	}
 
-	private static <E> Pair<Graph<E>, Map<Graph<E>.Vertex, Point2D>> readFile(Reader s, Type elemType) {
+	private static <E> Pair<Graph<E>, Map<E, Point2D>> readFile(Reader s, Type elemType) {
 		Type graphType = new ParameterizedType() {
 			@Override
 			public Type[] getActualTypeArguments() {
@@ -310,7 +310,7 @@ public class Main implements Runnable {
 		JsonObject obj = parser.parse(s).getAsJsonObject();
 
 		Graph<E> graph = gson.fromJson(obj, graphType);
-		Map<Graph<E>.Vertex, Point2D> knownPositions = new HashMap<>();
+		Map<E, Point2D> knownPositions = new HashMap<>();
 		JsonArray vertices = obj.getAsJsonArray("vertices");
 
 		vertices.forEach((eVert) -> {
@@ -318,15 +318,14 @@ public class Main implements Runnable {
 			Point2D.Double p = gson.fromJson(oVert.get("coordinates"), Point2D.Double.class);
 			if (p != null) {
 				E id = gson.fromJson(oVert.get("id"), elemType);
-				Optional<Graph<E>.Vertex> vertex = graph.getVertex(id);
-				knownPositions.put(vertex.get(), p);
+				knownPositions.put(id, p);
 			}
 		});
 
 		return new Pair<>(graph, knownPositions);
 	}
 
-	private static <E> void writeToFile(Graph<E> g, Writer s, Map<Graph<E>.Vertex, Point2D> posMap, Type elemType) {
+	private static <E> void writeToFile(Graph<E> g, Writer s, Map<E, Point2D> posMap, Type elemType) {
 		Type graphType = new ParameterizedType() {
 			@Override
 			public Type[] getActualTypeArguments() {
@@ -349,7 +348,7 @@ public class Main implements Runnable {
 
 		vertices.forEach((eVert) -> {
 			JsonObject oVert = eVert.getAsJsonObject();
-			Point2D pos = posMap.get(g.getVertex(gson.fromJson(oVert.get("id"), elemType)).get());
+			Point2D pos = posMap.get(gson.fromJson(oVert.get("id"), elemType));
 			oVert.add("coordinates", gson.toJsonTree(pos));
 		});
 
