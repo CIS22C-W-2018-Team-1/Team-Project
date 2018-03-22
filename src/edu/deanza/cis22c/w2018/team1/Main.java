@@ -8,12 +8,15 @@ import com.google.gson.JsonParser;
 import edu.deanza.cis22c.Pair;
 import edu.deanza.cis22c.w2018.team1.swing.ContextMenu;
 import edu.deanza.cis22c.w2018.team1.swing.EdgeTool;
+import edu.deanza.cis22c.w2018.team1.swing.EdgeWeightOverlay;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 import edu.deanza.cis22c.w2018.team1.swing.GraphSelectionHandler;
 import edu.deanza.cis22c.w2018.team1.swing.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.OrderedMouseListener;
 import edu.deanza.cis22c.w2018.team1.swing.PredicateDecorator;
+import edu.deanza.cis22c.w2018.team1.swing.VertexNameOverlay;
 
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -95,15 +98,16 @@ public class Main implements Runnable {
 			tool.setSource(e.getContext().iterator().next());
 
 			layers.add(tool.getOverlay(), 0);
-			layers.validate();
+			layers.revalidate();
+			pane.repaint();
 
 			listeners.addListener(tool);
 
 			tool.addToolListener(() -> {
 				layers.remove(tool.getOverlay());
 				listeners.removeListener(tool);
-				layers.validate();
-				pane.repaint();
+				layers.revalidate();
+				layers.repaint();
 			});
 		});
 		addEdge.setText("Add edge");
@@ -156,7 +160,8 @@ public class Main implements Runnable {
 				};
 				pane.setOpaque(false);
 				layers.add(pane, 0);
-				layers.validate();
+				layers.revalidate();
+				layers.repaint();
 			}
 
 			@Override
@@ -172,7 +177,8 @@ public class Main implements Runnable {
 			@Override
 			public void selectionEnded() {
 				layers.remove(pane);
-				layers.validate();
+				layers.revalidate();
+				layers.repaint();
 				pane = null;
 				rect = null;
 			}
@@ -222,6 +228,51 @@ public class Main implements Runnable {
 		file.add(save);
 
 		menuBar.add(file);
+
+		JMenu view = new JMenu("View");
+
+		EdgeWeightOverlay<E> edgeWeightOverlay = new EdgeWeightOverlay<>(pane);
+		Runnable edgeWeightRepainter = edgeWeightOverlay::repaint;
+
+		JCheckBoxMenuItem edgeWeights = new JCheckBoxMenuItem("Edge weights");
+		edgeWeights.addActionListener((e) -> {
+			if (edgeWeights.getState()) {
+				layers.add(edgeWeightOverlay, 0);
+				pane.addRepaintListener(edgeWeightRepainter);
+				layers.revalidate();
+				layers.repaint();
+			} else {
+				layers.remove(edgeWeightOverlay);
+				pane.removeRepaintListener(edgeWeightRepainter);
+				layers.revalidate();
+				layers.repaint();
+			}
+		});
+
+		edgeWeights.setState(true);
+		view.add(edgeWeights);
+
+		VertexNameOverlay<E> vertexNameOverlay = new VertexNameOverlay<>(pane);
+		Runnable vertexNameRepainter = vertexNameOverlay::repaint;
+
+		JCheckBoxMenuItem vertexNames = new JCheckBoxMenuItem("Vertex names");
+		vertexNames.addActionListener((e) -> {
+			if (vertexNames.getState()) {
+				layers.add(vertexNameOverlay, 0);
+				pane.addRepaintListener(vertexNameRepainter);
+				layers.revalidate();
+				layers.repaint();
+			} else {
+				layers.remove(vertexNameOverlay);
+				pane.removeRepaintListener(vertexNameRepainter);
+				layers.revalidate();
+				layers.repaint();
+			}
+		});
+
+		view.add(vertexNames);
+
+		menuBar.add(view);
 
 		frame.setJMenuBar(menuBar);
 

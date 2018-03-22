@@ -67,6 +67,10 @@ public class Vector2 {
 		return times(1 - alpha).plus(o.times(alpha));
 	}
 
+	public Vector2 lerp(Point2D p, double alpha) {
+		return lerp(new Vector2(p), alpha);
+	}
+
 	public Vector2 applyTransform(AffineTransform tx) {
 		Point2D p = new Point2D.Double(x, y);
 		tx.deltaTransform(p, p);

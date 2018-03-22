@@ -11,7 +11,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.Stroke;
@@ -33,6 +32,8 @@ public class GraphPanel<E> extends JPanel {
 	private List<Function<Pair<Graph<E>.Vertex, Point2D>, Optional<Pair<Stroke, Color>>>> vertexDecorators = new LinkedList<>();
 	private List<Function<Graph<E>.Edge, Optional<Pair<Stroke, Color>>>> edgeDecorators = new LinkedList<>();
 	private double vertexRadius = 25;
+
+	private List<Runnable> repaintListeners = new LinkedList<>();
 
 	private Pair<Stroke, Color> vertexStyle = new Pair<>(new BasicStroke(2), Color.BLACK);
 	private Pair<Stroke, Color> edgeStyle = new Pair<>(new BasicStroke(2), Color.BLACK);
@@ -93,6 +94,24 @@ public class GraphPanel<E> extends JPanel {
 
 	public Graph<E> getGraph() {
 		return graph;
+	}
+
+	public void addRepaintListener(Runnable l) {
+		this.repaintListeners.add(l);
+	}
+
+	public void removeRepaintListener(Runnable l) {
+		this.repaintListeners.remove(l);
+	}
+
+	@Override
+	public void repaint() {
+		super.repaint();
+
+		// No way to initialize it before the superclass constructor calls this
+		if (repaintListeners == null) { return; }
+
+		repaintListeners.forEach(Runnable::run);
 	}
 
 	public void setVertexRadius(double vertexRadius) {
@@ -216,12 +235,21 @@ public class GraphPanel<E> extends JPanel {
 		return defaultStyle;
 	}
 
-	private Pair<Stroke, Color> decorate(Graph<E>.Vertex vertex) {
+	public Pair<Stroke, Color> getStyleFor(Graph<E>.Vertex vertex) {
 		return decoratorLadder(vertexDecorators, vertexStyle, new Pair<>(vertex, positionTable.get(vertex)));
 	}
 
-	private Pair<Stroke, Color> decorate(Graph<E>.Edge edge) {
+	public Pair<Stroke, Color> getStyleFor(Graph<E>.Edge edge) {
 		return decoratorLadder(edgeDecorators, edgeStyle, edge);
+	}
+
+	public Optional<Line2D> getEdgeLine(Graph<E>.Edge edge) {
+		return Optional.ofNullable(positionTable.get(edge.getSource())).map(Vector2::new).flatMap((sourcePos) ->
+			Optional.ofNullable(positionTable.get(edge.getDestination())).map(Vector2::new).map((destPos) -> {
+				Vector2 offset = destPos.minus(sourcePos).normalized().times(vertexRadius);
+
+				return new Line2D.Double(sourcePos.plus(offset).asPoint(), destPos.minus(offset).asPoint());
+			}));
 	}
 
 	@Override
@@ -251,40 +279,29 @@ public class GraphPanel<E> extends JPanel {
 			Vector2 sourcePos = new Vector2(vertexPos);
 			AffineTransform tx = new AffineTransform();
 			for (Graph<E>.Edge edge: vertex.outgoingEdges()) {
+				getEdgeLine(edge).ifPresent((edgeLine) -> {
+					if (!clipBound.intersectsLine(edgeLine)) {
+						return;
+					}
 
-				Vector2 destPos = new Vector2(positionTable.get(edge.getDestination()));
+					Pair<Stroke, Color> style = getStyleFor(edge);
 
-				if (!clipBound.intersectsLine(new Line2D.Double(sourcePos.asPoint(), destPos.asPoint()))) {
-					continue;
-				}
+					localContext.setStroke(style.getLeft());
+					localContext.setColor(style.getRight());
 
-				Vector2 offset = destPos.minus(sourcePos).normalized().times(vertexRadius);
-				Vector2 edgeStart = sourcePos.plus(offset);
-				Vector2 edgeEnd   = destPos.minus(offset);
+					localContext.draw(edgeLine);
 
-				Pair<Stroke, Color> style = decorate(edge);
+					Vector2 edgeEnd = new Vector2(edgeLine.getP2());
+					Vector2 offset  = edgeEnd.minus(edgeLine.getP1());
 
-				localContext.setStroke(style.getLeft());
-				localContext.setColor(style.getRight());
+					tx.setToIdentity();
+					tx.translate(edgeEnd.getX(), edgeEnd.getY());
+					tx.rotate(offset.getX(), offset.getY());
 
-				localContext.drawLine((int) edgeStart.getX(), (int) edgeStart.getY(),
-						(int) edgeEnd.getX(),   (int) edgeEnd.getY());
-
-				Vector2 edgeCenter = sourcePos.lerp(destPos, 0.5);
-				Vector2 textOffset = new Vector2(-offset.getY(), offset.getX()).normalized().times(15);
-				if (textOffset.getX() < 0) {
-					textOffset = textOffset.times(-1);
-				}
-				Vector2 textPos = edgeCenter.plus(textOffset);
-				localContext.drawString(String.valueOf(edge.getWeight()), (float) textPos.getX(), (float) textPos.getY());
-
-				tx.setToIdentity();
-				tx.translate(edgeEnd.getX(), edgeEnd.getY());
-				tx.rotate(offset.getX(), offset.getY());
-
-				localContext.transform(tx);
-				localContext.fill(arrowHead);
-				localContext.setTransform(clearTx);
+					localContext.transform(tx);
+					localContext.fill(arrowHead);
+					localContext.setTransform(clearTx);
+				});
 			}
 		}
 
@@ -295,7 +312,7 @@ public class GraphPanel<E> extends JPanel {
 				continue;
 			}
 
-			Pair<Stroke, Color> style = decorate(vertex);
+			Pair<Stroke, Color> style = getStyleFor(vertex);
 
 			localContext.setStroke(style.getLeft());
 			localContext.setColor(style.getRight());
