@@ -1,5 +1,10 @@
 package edu.deanza.cis22c.w2018.team1;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import edu.deanza.cis22c.w2018.team1.Graph.Vertex;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -7,24 +12,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Type;
 import java.util.InputMismatchException;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Scanner;
-import java.util.stream.Collectors;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import edu.deanza.cis22c.w2018.team1.Graph.Edge;
-import edu.deanza.cis22c.w2018.team1.Graph.Vertex;
 
 //TODO: Use final data type
 public class Main {
@@ -128,7 +123,7 @@ public class Main {
 						System.out.println("No such vertex");
 						continue;
 					}
-					Graph<String>.Vertex vDest = oSource.get();
+					Graph<String>.Vertex vDest = oDest.get();
 
 					Optional<Graph<String>.Edge> oEdge = vSource.getEdgeTo(vDest);
 
