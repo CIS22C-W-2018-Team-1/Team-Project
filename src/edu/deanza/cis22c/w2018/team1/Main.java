@@ -1,10 +1,16 @@
 package edu.deanza.cis22c.w2018.team1;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
 import java.util.InputMismatchException;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -14,258 +20,304 @@ import java.util.OptionalDouble;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import edu.deanza.cis22c.w2018.team1.Graph.Edge;
 import edu.deanza.cis22c.w2018.team1.Graph.Vertex;
 
 //TODO: Use final data type
 public class Main {
 	public static void main(String[] args) {
+		Graph<String> g = null;
+		ArrayStack<Graph<String>.Edge> undoStack = new ArrayStack<Graph<String>.Edge>();
+		boolean unsaved = false;
 		boolean running = true;
-		while (running) {
-			
-			Scanner s = null;
-			while (s == null) {
-				s = openInputFile();
-				if (s == null) {
-					System.out.println("Would you like to quit? (y/n) ");
-					if (userScanner.nextLine().equals("y")) {
-						return;
-					}
+
+		MAIN_LOOP: while (true) {
+			System.out.println("MAIN MENU - Choose an option: ");
+			if (g == null) {
+				System.out.println("1. Open a graph from a file");
+				System.out.println("2. Create new graph");
+			} else {
+				System.out.println("1. Add an edge or change edge weight");
+				System.out.println("2. Remove an edge");
+				System.out.println("3. Undo previous Removal");
+				System.out.println("4. Display the graph using depth-first traversal");
+				System.out.println("5. Display the graph using breadth-first traversal");
+				System.out.println("6. Display the graph's adjacency list");
+				System.out.println("7. Find the maximum flow");
+				System.out.println("8. Save graph to file");
+				System.out.println("9. Close graph");
+			}
+			System.out.println("0. Exit program");
+			int input;
+			while (true) {
+				try {
+					input = userScanner.nextInt();
+					userScanner.nextLine();
+					break;
+				} catch (InputMismatchException e) {
+					System.out.println("Please enter a number.");
+					userScanner.nextLine();
 				}
 			}
-			
-			Graph<String> g = new Graph<String>();
-			ArrayStack<Edge> undoStack = new ArrayStack<Edge>();
-			
-			
-			while (running) {
-				System.out.println("-------------------------------------------------------");
-				System.out.println("MAIN MENU - Choose an option: ");
-				System.out.println("1. Read the Graph File");
-				System.out.println("2. Add an edge");
-				System.out.println("3. Remove an edge");
-				System.out.println("4. Undo previous Removal");
-				System.out.println("5. Display the graph using depth-first traversal");
-				System.out.println("6. Display the graph using breadth-first traversal");
-				System.out.println("7. Display the graph's adjaceny list");
-				System.out.println("8. Find the maximum flow");
-				System.out.println("9. Save the graph to a txt file");
-				System.out.println("0. End run");
-				int input;
-				while (true) {
-					try {
-						input = userScanner.nextInt();
-						userScanner.nextLine();
-						break;
-					} catch (InputMismatchException e) {
-						System.out.println("Please enter a number.");
-						userScanner.nextLine();
-					}
-				}
-				
+
+			if (g != null) {
 				if (input == 1) {
-					//TODO: Change for final data type
-					readFile(s, g);
-					System.out.println("Successfully read file to graph.");
-					
+					System.out.println("\nEnter the source (first vertex): ");
+
+					String source = userScanner.nextLine();
+					if ("".equals(source)) {
+						System.out.println("Cancelling operation");
+						continue;
+					}
+					Graph<String>.Vertex vSource = g.getOrCreateVertex(source);
+
+					System.out.println("Enter the destination (second vertex): ");
+					String dest = userScanner.nextLine();
+					if ("".equals(dest)) {
+						System.out.println("Cancelling operation");
+						continue;
+					}
+					Graph<String>.Vertex vDest = g.getOrCreateVertex(dest);
+
+					System.out.println("Enter the weight: ");
+					double weight;
+					while (true) {
+						String line = userScanner.nextLine();
+						if ("".equals(line)) {
+							System.out.println("Cancelling operation");
+							continue MAIN_LOOP;
+						}
+						try {
+							weight = Double.valueOf(line);
+							break;
+						} catch (NumberFormatException e) {
+							System.out.println("Please enter a valid number.");
+						}
+					}
+					vSource.createOrUpdateEdgeTo(vDest, weight);
+					unsaved = true;
+					continue;
 				} else if (input == 2) {
 					System.out.println("\nEnter the source (first vertex): ");
+
 					String source = userScanner.nextLine();
-					if (!source.equals("")) {
-						System.out.println("Enter the destination (second vertex): ");
-						String dest = userScanner.nextLine();
-						if (!dest.equals("")) {
-							Vertex vSource = g.getOrCreateVertex(source);
-							Vertex vDest = g.getOrCreateVertex(dest);
-							
-							
-							System.out.println("Enter the weight: ");
-							double weight;
-							while (true) {
-								try {
-									weight = userScanner.nextDouble();
-									userScanner.nextLine();
-									break;
-								} catch (InputMismatchException e) {
-									System.out.println("Please enter a number.");
-									userScanner.nextLine();
-								}
-							}
-							vSource.createOrUpdateEdgeTo(vDest, weight);
-						} else {
-							System.out.println("Canceled adding an edge.");
-						}
-					} else {
-						System.out.println("Canceled adding an edge.");
+					if ("".equals(source)) {
+						System.out.println("Cancelling operation");
+						continue;
 					}
-					
+
+					Optional<Graph<String>.Vertex> oSource = g.getVertex(source);
+					if (!oSource.isPresent()) {
+						System.out.println("No such vertex");
+						continue;
+					}
+					Graph<String>.Vertex vSource = oSource.get();
+
+					System.out.println("Enter the destination (second vertex): ");
+					String dest = userScanner.nextLine();
+					if ("".equals(dest)) {
+						System.out.println("Cancelling operation");
+						continue;
+					}
+
+					Optional<Graph<String>.Vertex> oDest = g.getVertex(dest);
+					if (!oDest.isPresent()) {
+						System.out.println("No such vertex");
+						continue;
+					}
+					Graph<String>.Vertex vDest = oSource.get();
+
+					Optional<Graph<String>.Edge> oEdge = vSource.getEdgeTo(vDest);
+
+					oEdge.ifPresent(Graph.Edge::remove);
+
+					if (oEdge.isPresent()) {
+						System.out.println("Successfully removed edge");
+					} else {
+						System.out.println("No such edge");
+					}
+
+					unsaved = true;
+					continue;
 				} else if (input == 3) {
-					System.out.println("\nEnter the first vertex: ");
-					String source = userScanner.nextLine();
-					if (!source.equals("")) {
-						System.out.println("Enter the second vertex: ");
-						String dest = userScanner.nextLine();
-						if (!dest.equals("")) {
-							boolean edgeExists = g.getOrCreateVertex(source).getEdgeTo(g.getOrCreateVertex(dest)).isPresent();
-							if (edgeExists == true) {
-								undoStack.push(g.getOrCreateVertex(source).getEdgeTo(g.getOrCreateVertex(dest)).get());
-								System.out.println("Successfully removed edge. ");
-								g.getOrCreateVertex(source).getEdgeTo(g.getOrCreateVertex(dest)).get().remove();
-							} else {
-								System.out.println("Input Error");
-							}
-						} else {
-							System.out.println("Canceled removal of an edge.");
-						}
-					} else {
-						System.out.println("Canceled removal of an edge.");
-					}
+					Graph<String>.Edge edgeToRestore = undoStack.pop();
+					edgeToRestore.getSource().createOrUpdateEdgeTo(edgeToRestore.getDestination(), edgeToRestore.getWeight());
+
+					continue;
 				} else if (input == 4) {
-					if (undoStack.isEmpty()) {
-						System.out.println("Error, make a removal first.");
-					} else {
-						Edge edgeToRestore = undoStack.pop();
-						edgeToRestore.getSource().createOrUpdateEdgeTo(edgeToRestore.getDestination(), edgeToRestore.getWeight());
-						System.out.println("Successfully restored last removal.");
-					}
-				} else if (input == 5) {
-					//TODO: Check if correct output
-					System.out.println("Displaying the graph using depth-first traversal: ");
+					//TODO
 					Iterator<String> dFirst = g.depthFirstIterator();
 					while (dFirst.hasNext()) {
 						System.out.println(dFirst.next());
 					}
-					
-				} else if (input == 6) {
-					//TODO: Check if correct output
-					System.out.println("Displaying the graph using breadth-first traversal: ");
+
+					continue;
+				} else if (input == 5) {
+					//TODO
 					Iterator<String> bFirst = g.breadthFirstIterator();
 					while (bFirst.hasNext()) {
 						System.out.println(bFirst.next());
 					}
-					
-				} else if (input == 7) {
-					System.out.println("Displaying the graph's adjacency list: ");
+
+					continue;
+				} else if (input == 6) {
 					g.showAdjTable();
-					
-				} else if (input == 8) {
+
+					continue;
+				} else if (input == 7) {
 					System.out.println("\nEnter the source (first vertex): ");
 					String source = userScanner.nextLine();
-					if (!source.equals("")) {
-						System.out.println("Enter the destination (second vertex): ");
-						String dest = userScanner.nextLine();
-						if (!dest.equals("")) {
-							Vertex vSource = g.getOrCreateVertex(source);
-							source = (String) vSource.getId();
-							
-							Vertex vDest = g.getOrCreateVertex(dest);
-							dest = (String) vDest.getId();
-							
-							OptionalDouble flow = MaxFlow.findMaximumFlow(g, source, dest);
-							if (flow.isPresent()) {
-								System.out.println("The max flow is: " + flow.getAsDouble());
-							} else {
-								System.out.println("Cannot find valid flow. ");
-							}
-						} else {
-							System.out.println("Canceled finding Max Flow.");
-						}
+					Vertex vSource = g.getOrCreateVertex(source);
+					source = (String) vSource.getId();
+
+					System.out.println("Enter the destination (second vertex): ");
+					String dest = userScanner.nextLine();
+					Vertex vDest = g.getOrCreateVertex(dest);
+					dest = (String) vDest.getId();
+
+					OptionalDouble flow = MaxFlow.findMaximumFlow(g, source, dest);
+					if (flow.isPresent()) {
+						System.out.println("The max flow is: " + flow.getAsDouble());
 					} else {
 						System.out.println("Canceled finding Max Flow.");
 					}
-				} else if (input == 9) {
-					//TODO: Change for final data type
-					try {
-						openOutputFile(g);
+
+					continue;
+				} else if (input == 8) {
+					try (Writer writer = openOutputFile()) {
+						writeToFile(g, writer);
 					} catch (IOException e) {
-						e.printStackTrace();
+						throw new RuntimeException(e);
 					}
-					
+
+					continue;
+				} else if (input == 9) {
+					if (unsaved) {
+						System.out.println("Graph has unsaved changes, are you sure you want to continue? (y/n)");
+						while (true) {
+							char response = userScanner.nextLine().charAt(0);
+
+							if (response == 'n' || response == 'N') {
+								continue MAIN_LOOP;
+							} else if (response == 'y' || response == 'Y') {
+								break;
+							}
+
+							System.out.print("Please respond y or n:");
+						}
+					}
+
+					undoStack = new ArrayStack<>();
+					g = null;
+
+					continue;
 				} else if (input == 0) {
-					running = false;
-				} else {
-					System.out.println("Error, enter a proper input.");
+					if (unsaved) {
+						System.out.println("Graph has unsaved changes, are you sure you want to continue? (y/n)");
+						while (true) {
+							char response = userScanner.nextLine().charAt(0);
+
+							if (response == 'n' || response == 'N') {
+								continue MAIN_LOOP;
+							} else if (response == 'y' || response == 'Y') {
+								break MAIN_LOOP;
+							}
+
+							System.out.print("Please respond y or n:");
+						}
+					} else {
+						break;
+					}
+				}
+			} else {
+				if (input == 1) {
+					Reader reader = openInputFile();
+					if (reader != null) {
+						g = readFile(reader);
+						try {
+							reader.close();
+						} catch (IOException e) {
+							throw new RuntimeException(e);
+						}
+					}
+
+					continue;
+				} else if (input == 2) {
+					g = new Graph<>();
+
+					continue;
+				} else if (input == 0) {
+					break;
 				}
 			}
-			while (true) {
-				System.out.println("Would you like to test another input file? (y/n)");
-				String response = userScanner.nextLine();
-				if (response.equals("y")) {
-					running = true;
-					break;
-				} else if (response.equals("n")) {
-					break;
-				}
-			}
+			System.out.println("");
 		}
 		System.out.println("Program Ended.");
 	}
+
+	private static Gson gson;
+
+	static {
+		GsonBuilder gBuilder = new GsonBuilder();
+		gBuilder.registerTypeAdapter(Graph.class, new GraphSerializer());
+		gBuilder.setPrettyPrinting();
+		gson = gBuilder.create();
+	}
 	
-	@SuppressWarnings("unchecked")
-	public static void readFile(Scanner s, Graph g) {
-		while (s.hasNextLine()) {
-			String source = s.nextLine();
-			Vertex vSource = g.getOrCreateVertex(source);
-			String dest = s.nextLine();
-			Vertex vDest = g.getOrCreateVertex(dest);
-			double weight = Double.parseDouble(s.nextLine());
-			vSource.createOrUpdateEdgeTo(vDest, weight);		
-		}
+	private static Graph<String> readFile(Reader s) {
+		Type graphType = new TypeToken<Graph<String>>() {}.getType();
+		return gson.fromJson(s, graphType);
+	}
+
+	private static void writeToFile(Graph<String> g, Writer s) {
+		gson.toJson(g, s);
 	}
 	
 	public static Scanner userScanner = new Scanner(System.in);
-	
-	public static void openOutputFile(Graph g) throws IOException {
-		System.out.println("Enter a file name to save the graph: ");
-		String name = userScanner.nextLine();
-		File file = new File(name);
-		try {
-			if (file.createNewFile()){
-				System.out.println("File was created.");
-			}else{
-				System.out.println("Adding to existing file.");
-			}
-			
-    	} catch (IOException e) {
-	      e.printStackTrace();
-    	}
-		PrintWriter writer = new PrintWriter(new FileWriter(file));
-		
-		Iterator iter = g.iterator();
 
-		while (iter.hasNext()) {
-			Vertex v = (Vertex) g.getVertex(iter.next()).get();
-			writer.write(
-					"Adj List for " + v.getId() + ": "
-					+ v.outgoingEdges().parallelStream().map(
-							(e) -> ((Edge)e).getDestination().getId()
-									+ String.format("(%3.1f)", ((Edge)e).getWeight()))
-					.collect(Collectors.joining(", "))
-			);
-			writer.write("\n");
-		}
-		
-		writer.close();
-	}
-	
-	
-	// opens a text file for input, returns a Scanner:
-	public static Scanner openInputFile()
-	{
+	/**
+	 * Opens a file for input
+	 * @return A reader for the file
+	 */
+	private static Reader openInputFile() {
 		String filename;
-        Scanner scanner = null;
-        
-		System.out.print("Enter the input filename: ");
-		filename = userScanner.nextLine();
-        	File file= new File(filename);
 
-        	try{
-        		scanner = new Scanner(file);
-        	}// end try
-        	catch(FileNotFoundException fe){
-        	   System.out.println("Can't open input file\n");
-       	    return null; // array of 0 elements
-        	} // end catch
-        	return scanner;
+		System.out.print("Enter filepath: ");
+		filename = userScanner.nextLine();
+		File file = new File(filename);
+
+		if (file.exists()) {
+			try {
+				return new BufferedReader(new FileReader(file));
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException("ERROR: UNREACHABLE STATE REACHED");
+			}
+		} else {
+			System.out.println("File does not exist.");
+			return null;
+		}
+	}
+
+	/**
+	 * Opens a file for output
+	 * @return A writer for the file
+	 */
+	private static Writer openOutputFile() {
+		String filename;
+
+		System.out.print("Enter file path: ");
+		filename = userScanner.nextLine();
+		File file = new File(filename);
+
+		try {
+			return new BufferedWriter(new FileWriter(file));
+		} catch (IOException e) {
+			System.out.println(e);
+		}
+
+		return null;
 	}
 }
