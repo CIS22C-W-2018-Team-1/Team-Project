@@ -19,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.OverlayLayout;
 import javax.swing.SwingUtilities;
@@ -44,7 +45,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 public class Main implements Runnable {
@@ -307,7 +307,7 @@ public class Main implements Runnable {
 
 	@Override
 	public void run() {
-		JFrame frame = buildGraphFrame(() -> UUID.randomUUID().toString(), String.class);
+		JFrame frame = buildGraphFrame(() -> JOptionPane.showInputDialog("Input new node name:"), String.class);
 		frame.setSize(800, 600);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setVisible(true);
