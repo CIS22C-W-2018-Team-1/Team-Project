@@ -126,7 +126,10 @@ public class Main {
 					Graph<String>.Vertex vDest = oDest.get();
 
 					Optional<Graph<String>.Edge> oEdge = vSource.getEdgeTo(vDest);
-
+					
+					if (oEdge.isPresent()) {
+						undoStack.push(oEdge.get());
+					}
 					oEdge.ifPresent(Graph.Edge::remove);
 
 					if (oEdge.isPresent()) {
@@ -138,6 +141,10 @@ public class Main {
 					unsaved = true;
 					continue;
 				} else if (input == 3) {
+					if (undoStack.isEmpty()) {
+						System.out.println("No removals to undo");
+						continue;
+					}
 					Graph<String>.Edge edgeToRestore = undoStack.pop();
 					edgeToRestore.getSource().createOrUpdateEdgeTo(edgeToRestore.getDestination(), edgeToRestore.getWeight());
 
