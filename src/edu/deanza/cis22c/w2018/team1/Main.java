@@ -131,6 +131,7 @@ public class Main {
 						undoStack.push(oEdge.get());
 					}
 					oEdge.ifPresent(Graph.Edge::remove);
+					oEdge.ifPresent(undoStack::push);
 
 					if (oEdge.isPresent()) {
 						System.out.println("Successfully removed edge");
