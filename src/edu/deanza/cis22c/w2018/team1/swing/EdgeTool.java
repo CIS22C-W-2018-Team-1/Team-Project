@@ -54,11 +54,12 @@ public class EdgeTool<E> implements MouseInputListener {
 
 			Graphics2D g2d = (Graphics2D) g;
 
-			Vector2 sourcePos = new Vector2(panel.getVertexPosition(source).get());
+			Vector2 sourcePos = new Vector2(panel.getVertexPosition(source.getId()).get());
 			Vector2 destPos;
 
 			Optional<Vector2> destVertPos = panel
 					.getVertexAt(mousePos)
+					.map(Graph.Vertex::getId)
 					.flatMap(panel::getVertexPosition)
 					.map(Vector2::new);
 

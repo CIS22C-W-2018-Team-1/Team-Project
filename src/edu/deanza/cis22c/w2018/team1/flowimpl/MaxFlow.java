@@ -30,7 +30,7 @@ public class MaxFlow<E> {
 
 	private boolean done = false;
 
-	private MaxFlow(Graph<E> graph, Graph<E>.Vertex source, Graph<E>.Vertex dest) {
+	public MaxFlow(Graph<E> graph, Graph<E>.Vertex source, Graph<E>.Vertex dest) {
 		this.graph = graph;
 
 		residualGraph = new Graph<>(graph);
@@ -38,13 +38,44 @@ public class MaxFlow<E> {
 		rDest   = residualGraph.getVertex(dest.getId()).get();
 	}
 
-	private void updateLevels() {
+	public double getTotalFlow() {
+		return totalFlow;
+	}
+
+	public Map<E, Integer> getLastLevels() {
+		return lastLevels;
+	}
+
+	public Graph<E> getTotalFlowGraph() {
+		return totalFlowGraph;
+	}
+
+	public Graph<E> getLastFlowGraph() {
+		return lastFlowGraph;
+	}
+
+	public Graph<E> getAccessibilityGraph() {
+		Graph<E> ret = new Graph<>();
+
+		residualGraph.breadthFirstIterator(rSource.getId()).forEachRemaining(
+				(e) -> residualGraph.getVertex(e).ifPresent((vertex) -> vertex.outgoingEdges().forEach((edge) -> {
+					if (lastLevels.get(edge.getDestination().getId()) > lastLevels.get(e))
+					ret.getOrCreateVertex(e).createOrUpdateEdgeTo(
+							ret.getOrCreateVertex(edge.getDestination().getId()), edge.getWeight());
+				})));
+
+		return ret;
+	}
+
+	public boolean isDone() {
+		return done;
+	}
+
+	public void updateLevels() {
 		lastLevels = computeLevels(rSource);
 	}
 
-	private void doIteration() {
-		updateLevels();
-
+	public void doIteration() {
 		Optional<Pair<Double, Graph<E>>> oRes = computeBlockingFlow(rSource, rDest, lastLevels);
 
 		if (!oRes.isPresent()) {
@@ -64,6 +95,7 @@ public class MaxFlow<E> {
 
 	private void execute() {
 		while (!done) {
+			updateLevels();
 			doIteration();
 		}
 	}
@@ -78,12 +110,16 @@ public class MaxFlow<E> {
 
 					if (source.hasEdgeTo(dest)) {
 						Graph<E>.Edge edgeToUpdate = source.getEdgeTo(dest).get();
+						System.out.println("Has edge, updating");
 
 						edgeToUpdate.setWeight(edgeToUpdate.getWeight() + edge.getWeight());
 					} else {
+						System.out.println("Creating edge");
 						source.createOrUpdateEdgeTo(dest, edge.getWeight());
 					}
 				});
+
+		augend.showAdjTable();
 	}
 
 	private static <E> void canonicalizeGraph(Graph<E> g) {
@@ -108,7 +144,8 @@ public class MaxFlow<E> {
 
 	private static <E> void trimGraph(Graph<E> g) {
 		List<Graph<E>.Edge> edgesToRemove = g.vertices().values().stream()
-				.map(Graph.Vertex::outgoingEdges).flatMap(Collection::stream).collect(Collectors.toList());
+				.map(Graph.Vertex::outgoingEdges).flatMap(Collection::stream).filter(edge -> edge.getWeight() == 0.0)
+				.collect(Collectors.toList());
 
 		edgesToRemove.forEach(Graph.Edge::remove);
 	}
