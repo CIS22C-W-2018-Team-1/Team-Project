@@ -22,7 +22,7 @@ public class MaxFlow<E> extends Graph<E> {
 	private boolean done;
 	private double totalFlow = 0.0;
 	private Graph<E> lastFlowGraph;
-	private Graph<E> totalFlowGraph;
+	private Graph<E> totalFlowGraph = new Graph<>();
 
 	@Override
 	protected Vertex<E> makeVertex(E x) {
@@ -58,7 +58,8 @@ public class MaxFlow<E> extends Graph<E> {
 			final List<Vertex<E>> next = nextLevel;
 			currentLevel.forEach((vertex) ->
 					vertex.getAdjList().values().stream().map(Pair::getLeft).forEachOrdered((dest) -> {
-						if (dest.isVisited()) {
+						if (!dest.isVisited()) {
+							dest.visit();
 							next.add(dest);
 							((MaxFlowVertex<E>) dest).setLevel(lvl);
 						}
