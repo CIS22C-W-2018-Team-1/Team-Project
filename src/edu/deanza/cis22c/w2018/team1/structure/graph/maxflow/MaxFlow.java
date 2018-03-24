@@ -46,6 +46,9 @@ public class MaxFlow<E> extends Graph<E> {
 		return totalFlow;
 	}
 
+	/**
+	 * Computes the levels via a breadth first search
+	 */
 	private void computeLevels() {
 		int level = 1;
 
@@ -69,6 +72,11 @@ public class MaxFlow<E> extends Graph<E> {
 		}
 	}
 
+	/**
+	 * Greedily probes one flow
+	 *
+	 * @return   the flow
+	 */
 	private Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> computeGreedyAugmentingFlow() {
 		unvisitVertices();
 		source.visit();
@@ -77,6 +85,7 @@ public class MaxFlow<E> extends Graph<E> {
 		Map<MaxFlowVertex<E>, Double> flowAtVertex = new HashMap<>();
 		flowAtVertex.put(source, Double.POSITIVE_INFINITY);
 
+		// Straightforward greedy search
 		MaxFlowVertex<E> currentVertex = source;
 		double flowCache = Double.POSITIVE_INFINITY;
 		while (currentVertex != null && currentVertex != dest) {
@@ -108,6 +117,7 @@ public class MaxFlow<E> extends Graph<E> {
 
 		LinkedList<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>> ret = new LinkedList<>();
 
+		// Invert the edges in the path to allow for backtracking later
 		while (currentVertex != source) {
 			MaxFlowVertex<E> prevVertex = backtrackMap.get(currentVertex);
 
@@ -132,7 +142,17 @@ public class MaxFlow<E> extends Graph<E> {
 		return Optional.of(new Pair<>(flowCache, ret));
 	}
 
+	/**
+	 * Greedily probes as many flows as possible until blocked
+	 *
+	 * @return   the flow graph
+	 */
 	private Optional<Pair<Double, Graph<E>>> computeBlockingFlow() {
+		// First flow has to be treated somewhat specially, which makes this method
+		// far longer and more complicated looking than it actually is.
+		// Most of this is just exactly the same as what's in the loop, with some initialization
+		// code added.
+
 		Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> oFirstFlow
 				= computeGreedyAugmentingFlow();
 
@@ -147,12 +167,15 @@ public class MaxFlow<E> extends Graph<E> {
 		firstFlow.getRight().forEach(
 				edge -> flowGraph.addEdgeOrUpdate(edge.getLeft().getData(), edge.getRight().getData(), dFirstFlow));
 
+
 		Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> oNextFlow
 				= computeGreedyAugmentingFlow();
 		while (oNextFlow.isPresent()) {
 			Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>> nextFlow = oNextFlow.get();
 
 			extantFlow += nextFlow.getLeft();
+
+			// the following is entirely unnecessary except for visualization purposes
 			nextFlow.getRight().forEach((edge) -> {
 				Vertex<E> flowSource, flowDestination;
 				flowSource      = flowGraph.addToVertexSet(edge.getLeft().getData());
@@ -165,6 +188,7 @@ public class MaxFlow<E> extends Graph<E> {
 					flowSource.addToAdjListOrUpdate(flowDestination, nextFlow.getLeft());
 				}
 			});
+			// end unnecessary stuff
 
 			oNextFlow = computeGreedyAugmentingFlow();
 		}
@@ -191,6 +215,10 @@ public class MaxFlow<E> extends Graph<E> {
 		canonicalizeGraph(totalFlowGraph);
 	}
 
+	/**
+	 * Adds all the edges in one graph to another,
+	 * summing capacities as necessary
+ 	 */
 	private static <E> void addGraphTo(Graph<E> addend, Graph<E> augend) {
 		addend.getVertexSet().values().forEach(
 				vertex -> vertex.getAdjList().values().forEach(
@@ -207,6 +235,11 @@ public class MaxFlow<E> extends Graph<E> {
 						}));
 	}
 
+	/**
+	 * Converts the graph such that there's only one edge
+	 * between any two nodes. If there are two, the lesser
+	 * one is subtracted from the opposite greater one and removed.
+	 */
 	private static <E> void canonicalizeGraph(Graph<E> g) {
 		g.getVertexSet().values().forEach(
 				source -> source.getAdjList().values().forEach(
@@ -224,6 +257,9 @@ public class MaxFlow<E> extends Graph<E> {
 		trimGraph(g);
 	}
 
+	/**
+	 * Removes any edges with capacity 0 from the graph
+	 */
 	private static <E> void trimGraph(Graph<E> g) {
 		List<Pair<E, E>> edgesToRemove = g.getVertexSet().values().stream()
 				.flatMap(source -> source.getAdjList().values().stream()
@@ -234,8 +270,16 @@ public class MaxFlow<E> extends Graph<E> {
 		edgesToRemove.forEach((e) -> g.remove(e.getLeft(), e.getRight()));
 	}
 
-	public static <E> OptionalDouble findMaximumFlow(Graph<E> graph, E source, E dest) {
-		MaxFlow<E> maxFlow = new MaxFlow<>(graph, source, dest);
+	/**
+	 * Finds the maximum flow between two nodes in a graph using Dinic's algorithm
+	 *
+	 * @param   graph    the graph
+	 * @param   source   the source vertex
+	 * @param   sink     the sink vertex
+	 * @return   the maximum flow if any
+	 */
+	public static <E> OptionalDouble findMaximumFlow(Graph<E> graph, E source, E sink) {
+		MaxFlow<E> maxFlow = new MaxFlow<>(graph, source, sink);
 
 		while (!maxFlow.isDone()) {
 			maxFlow.doIteration();
