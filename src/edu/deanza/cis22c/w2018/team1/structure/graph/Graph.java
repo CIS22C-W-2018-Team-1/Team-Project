@@ -36,6 +36,11 @@ public class Graph<E> {
 		src.addToAdjListOrUpdate(dst, cost);
 	}
 
+	// Meant to be overridden to provide the proper vertex subclass
+	protected Vertex<E> makeVertex(E x) {
+		return new Vertex<>(x);
+	}
+
 	/**
 	 * Retrieves the vertex with the given data,
 	 * creating it if necessary.
@@ -56,7 +61,7 @@ public class Graph<E> {
 		}
 
 		// the vertex not there, so create one
-		retVal = new Vertex<>(x);
+		retVal = makeVertex(x);
 		vertexSet.put(x, retVal);
 
 		return retVal;   // should never happen
