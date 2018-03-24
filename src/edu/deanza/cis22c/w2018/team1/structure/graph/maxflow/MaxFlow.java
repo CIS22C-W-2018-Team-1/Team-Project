@@ -7,13 +7,11 @@ import edu.deanza.cis22c.w2018.team1.structure.graph.Vertex;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MaxFlow<E> extends Graph<E> {
@@ -72,9 +70,8 @@ public class MaxFlow<E> extends Graph<E> {
 	}
 
 	private Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> computeGreedyAugmentingFlow() {
-		Set<Vertex<E>> visited = new HashSet<>();
-
-		visited.add(source);
+		unvisitVertices();
+		source.visit();
 
 		Map<MaxFlowVertex<E>, MaxFlowVertex<E>> backtrackMap = new HashMap<>();
 		Map<MaxFlowVertex<E>, Double> flowAtVertex = new HashMap<>();
@@ -86,7 +83,7 @@ public class MaxFlow<E> extends Graph<E> {
 			int currentLevel = currentVertex.getLevel();
 
 			Optional<Pair<Vertex<E>, Double>> nextEdge = currentVertex.getAdjList().values().stream()
-					.filter((p) -> !visited.contains(p.getLeft()))
+					.filter((p) -> !p.getLeft().isVisited())
 					.filter((p) -> ((MaxFlowVertex<E>) p.getLeft()).getLevel() > currentLevel)
 					.reduce((l, r) -> l.getRight() > r.getRight() ? l : r);
 
@@ -99,7 +96,7 @@ public class MaxFlow<E> extends Graph<E> {
 				MaxFlowVertex<E> nextVertex = (MaxFlowVertex<E>) nextEdge.get().getLeft();
 				double edgeFlow = nextEdge.get().getRight();
 
-				visited.add(nextVertex);
+				nextVertex.visit();
 				backtrackMap.put(nextVertex, currentVertex);
 				flowCache = Math.min(flowCache, edgeFlow);
 				flowAtVertex.put(nextVertex, flowCache);
