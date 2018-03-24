@@ -1,4 +1,4 @@
-package edu.deanza.cis22c.w2018.team1;
+package edu.deanza.cis22c.w2018.team1.serialization;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
@@ -8,7 +8,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import edu.deanza.cis22c.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
+import edu.deanza.cis22c.w2018.team1.structure.graph.Vertex;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

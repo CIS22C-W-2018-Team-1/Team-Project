@@ -1,4 +1,4 @@
-package edu.deanza.cis22c;
+package edu.deanza.cis22c.w2018.team1.structure;
 
 import java.util.Objects;
 

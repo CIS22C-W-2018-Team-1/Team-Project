@@ -1,8 +1,8 @@
 package edu.deanza.cis22c.w2018.team1.flowimpl;
 
-import edu.deanza.cis22c.Pair;
-import edu.deanza.cis22c.w2018.team1.Graph;
-import edu.deanza.cis22c.w2018.team1.Vertex;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
+import edu.deanza.cis22c.w2018.team1.structure.graph.Vertex;
 
 import java.util.ArrayList;
 import java.util.Collections;

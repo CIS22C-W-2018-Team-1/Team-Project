@@ -1,6 +1,8 @@
-package edu.deanza.cis22c.w2018.team1;
+package edu.deanza.cis22c.w2018.team1.structure.graph;
 
-import edu.deanza.cis22c.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.queue.LinkedQueue;
+import edu.deanza.cis22c.w2018.team1.structure.stack.LinkedStack;
 
 import java.util.Collections;
 import java.util.HashMap;
