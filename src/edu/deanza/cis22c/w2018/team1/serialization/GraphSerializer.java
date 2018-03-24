@@ -55,9 +55,9 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 		JsonObject jGraph = new JsonObject();
 		JsonArray vertices = new JsonArray();
 
-		for (Vertex vertex: graph.getVertexSet().values()) {
-			vertices.add(serializeVertex(vertex, jsonSerializationContext));
-		}
+		graph.getVertexSet().values().stream()
+				.map(v -> serializeVertex(v, jsonSerializationContext))
+				.forEachOrdered(vertices::add);
 
 		jGraph.add("vertices", vertices);
 
@@ -71,16 +71,21 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 
 		JsonArray edges = new JsonArray();
 
-		for (Pair<Vertex<T>, Double> edge: vertex.getAdjList().values()) {
-			JsonObject jEdge = new JsonObject();
-			jEdge.addProperty("weight", edge.getRight());
-			jEdge.add("destination", jsonSerializationContext.serialize(edge.getLeft().getData()));
-
-			edges.add(jEdge);
-		}
+		vertex.getAdjList().values().stream()
+				.map(e -> serializeEdge(e, jsonSerializationContext))
+				.forEachOrdered(edges::add);
 
 		jVertex.add("edges", edges);
 
 		return jVertex;
+	}
+
+	private <T> JsonObject serializeEdge(Pair<Vertex<T>, Double> edge,
+	                                     JsonSerializationContext jsonSerializationContext) {
+		JsonObject jEdge = new JsonObject();
+		jEdge.addProperty("weight", edge.getRight());
+		jEdge.add("destination", jsonSerializationContext.serialize(edge.getLeft().getData()));
+
+		return jEdge;
 	}
 }
