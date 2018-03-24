@@ -2,9 +2,9 @@ package edu.deanza.cis22c.w2018.team1.flowimpl;
 
 import edu.deanza.cis22c.Pair;
 import edu.deanza.cis22c.w2018.team1.Graph;
+import edu.deanza.cis22c.w2018.team1.Vertex;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,7 +20,7 @@ public class MaxFlow<E> {
 	private Graph<E> graph;
 	private Graph<E> residualGraph;
 
-	private Graph<E>.Vertex rSource, rDest;
+	private Vertex<E> rSource, rDest;
 
 	private double totalFlow = 0.0;
 
@@ -30,12 +30,16 @@ public class MaxFlow<E> {
 
 	private boolean done = false;
 
-	private MaxFlow(Graph<E> graph, Graph<E>.Vertex source, Graph<E>.Vertex dest) {
+	private MaxFlow(Graph<E> graph, Vertex<E> source, Vertex<E> dest) {
 		this.graph = graph;
 
-		residualGraph = new Graph<>(graph);
-		rSource = residualGraph.getVertex(source.getId()).get();
-		rDest   = residualGraph.getVertex(dest.getId()).get();
+		residualGraph = new Graph<>();
+		graph.getVertexSet().values().forEach(
+				v -> v.getAdjList().values().forEach(
+						p -> residualGraph.addEdgeOrUpdate(v.getData(), p.getLeft().getData(), p.getRight())));
+
+		rSource = residualGraph.getVertex(source.getData());
+		rDest   = residualGraph.getVertex(dest.getData());
 	}
 
 	private void updateLevels() {
@@ -69,65 +73,63 @@ public class MaxFlow<E> {
 	}
 
 	private static <E> void addGraphTo(Graph<E> addend, Graph<E> augend) {
-		addend.vertices().values().stream()
-				.map(Graph.Vertex::outgoingEdges)
-				.flatMap(Collection::stream)
-				.forEach((edge) -> {
-					Graph<E>.Vertex source = augend.getOrCreateVertex(edge.getSource().getId());
-					Graph<E>.Vertex dest   = augend.getOrCreateVertex(edge.getDestination().getId());
+		addend.getVertexSet().values().forEach(
+				vertex -> vertex.getAdjList().values().forEach(
+						edge -> {
+							Vertex<E> source = augend.addToVertexSet(vertex.getData());
+							Vertex<E> dest   = augend.addToVertexSet(edge.getLeft().getData());
 
-					if (source.hasEdgeTo(dest)) {
-						Graph<E>.Edge edgeToUpdate = source.getEdgeTo(dest).get();
-
-						edgeToUpdate.setWeight(edgeToUpdate.getWeight() + edge.getWeight());
-					} else {
-						source.createOrUpdateEdgeTo(dest, edge.getWeight());
-					}
-				});
+							OptionalDouble oldCost = source.getCostTo(dest);
+							if (oldCost.isPresent()) {
+								source.addToAdjListOrUpdate(dest, oldCost.getAsDouble() + edge.getRight());
+							} else {
+								source.addToAdjListOrUpdate(dest, edge.getRight());
+							}
+						}));
 	}
 
 	private static <E> void canonicalizeGraph(Graph<E> g) {
-		g.vertices().values().stream()
-				.map(Graph.Vertex::outgoingEdges)
-				.flatMap(Collection::stream)
-				.forEach((edge) -> edge.getDestination().getEdgeTo(edge.getSource()).ifPresent(
-						(oppEdge) -> {
-							double edgeWeight = edge.getWeight();
-							double oppEdgeWeight = oppEdge.getWeight();
+		g.getVertexSet().values().forEach(
+				source -> source.getAdjList().values().forEach(
+				edge -> edge.getLeft().getCostTo(source).ifPresent(
+						(oppEdgeWeight) -> {
+							double edgeWeight = edge.getRight();
 							if (edgeWeight < oppEdgeWeight) {
-								oppEdge.setWeight(oppEdgeWeight - edgeWeight);
-								edge.setWeight(0);
+								edge.getLeft().addToAdjListOrUpdate(source, oppEdgeWeight - edgeWeight);
 							} else if (edgeWeight == oppEdgeWeight) {
-								edge.setWeight(0);
-								oppEdge.setWeight(0);
+								edge.setRight(0.0);
+								edge.getLeft().addToAdjListOrUpdate(source, oppEdgeWeight - edgeWeight);
 							}
-						}));
+						})));
 
 		trimGraph(g);
 	}
 
 	private static <E> void trimGraph(Graph<E> g) {
-		List<Graph<E>.Edge> edgesToRemove = g.vertices().values().stream()
-				.map(Graph.Vertex::outgoingEdges).flatMap(Collection::stream).collect(Collectors.toList());
+		List<Pair<E, E>> edgesToRemove = g.getVertexSet().values().stream()
+				.flatMap(source -> source.getAdjList().values().stream()
+						.filter(e -> e.getRight() == 0)
+						.map(p -> new Pair<>(source.getData(), p.getLeft().getData())))
+				.collect(Collectors.toList());
 
-		edgesToRemove.forEach(Graph.Edge::remove);
+		edgesToRemove.forEach((e) -> g.remove(e.getLeft(), e.getRight()));
 	}
 
-	private static <E> Map<E, Integer> computeLevels(Graph<E>.Vertex source) {
+	private static <E> Map<E, Integer> computeLevels(Vertex<E> source) {
 		Map<E, Integer> levels = new HashMap<>();
-		levels.put(source.getId(), 0);
+		levels.put(source.getData(), 0);
 
 		int level = 1;
-		List<Graph<E>.Vertex> currentLevel = Collections.singletonList(source);
-		List<Graph<E>.Vertex> nextLevel = new ArrayList<>();
+		List<Vertex<E>> currentLevel = Collections.singletonList(source);
+		List<Vertex<E>> nextLevel = new ArrayList<>();
 		while (!currentLevel.isEmpty()) {
 			final int lvl = level;
-			final List<Graph<E>.Vertex> next = nextLevel;
+			final List<Vertex<E>> next = nextLevel;
 			currentLevel.forEach((vertex) ->
-					vertex.outgoingEdges().stream().map(Graph.Edge::getDestination).forEachOrdered((dest) -> {
-						if (!levels.containsKey(dest.getId())) {
+					vertex.getAdjList().values().stream().map(Pair::getLeft).forEachOrdered((dest) -> {
+						if (!levels.containsKey(dest.getData())) {
 							next.add(dest);
-							levels.put(dest.getId(), lvl);
+							levels.put(dest.getData(), lvl);
 						}
 					}));
 
@@ -138,26 +140,26 @@ public class MaxFlow<E> {
 		return levels;
 	}
 
-	private static <E> Optional<Pair<Double, List<Graph<E>.Edge>>>
+	private static <E> Optional<Pair<Double, List<Pair<Vertex<E>, Vertex<E>>>>>
 			computeGreedyAugmentingFlow(Map<E, Integer> levels,
-			                            Graph<E>.Vertex source, Graph<E>.Vertex dest) {
-		Set<Graph<E>.Vertex> visited = new HashSet<>();
+			                            Vertex<E> source, Vertex<E> dest) {
+		Set<Vertex<E>> visited = new HashSet<>();
 
 		visited.add(source);
 
-		Map<Graph<E>.Vertex, Graph<E>.Vertex> backtrackMap = new HashMap<>();
-		Map<Graph<E>.Vertex, Double> flowAtVertex = new HashMap<>();
+		Map<Vertex<E>, Vertex<E>> backtrackMap = new HashMap<>();
+		Map<Vertex<E>, Double> flowAtVertex = new HashMap<>();
 		flowAtVertex.put(source, Double.POSITIVE_INFINITY);
 
-		Graph<E>.Vertex currentVertex = source;
+		Vertex<E> currentVertex = source;
 		double flowCache = Double.POSITIVE_INFINITY;
 		while (currentVertex != null && currentVertex != dest) {
-			int currentLevel = levels.get(currentVertex.getId());
+			int currentLevel = levels.get(currentVertex.getData());
 
-			Optional<Graph<E>.Edge> nextEdge = currentVertex.outgoingEdges().stream()
-					.filter((p) -> !visited.contains(p.getDestination()))
-					.filter((p) -> levels.get(p.getDestination().getId()) > currentLevel)
-					.reduce((l, r) -> l.getWeight() > r.getWeight() ? l : r);
+			Optional<Pair<Vertex<E>, Double>> nextEdge = currentVertex.getAdjList().values().stream()
+					.filter((p) -> !visited.contains(p.getLeft()))
+					.filter((p) -> levels.get(p.getLeft().getData()) > currentLevel)
+					.reduce((l, r) -> l.getRight() > r.getRight() ? l : r);
 
 			if (!nextEdge.isPresent()) {
 				currentVertex = backtrackMap.get(currentVertex);
@@ -165,8 +167,8 @@ public class MaxFlow<E> {
 					flowCache = flowAtVertex.get(currentVertex);
 				}
 			} else {
-				Graph<E>.Vertex nextVertex = nextEdge.get().getDestination();
-				double edgeFlow = nextEdge.get().getWeight();
+				Vertex<E> nextVertex = nextEdge.get().getLeft();
+				double edgeFlow = nextEdge.get().getRight();
 
 				visited.add(nextVertex);
 				backtrackMap.put(nextVertex, currentVertex);
@@ -178,25 +180,25 @@ public class MaxFlow<E> {
 
 		if (currentVertex == null) { return Optional.empty(); }
 
-		LinkedList<Graph<E>.Edge> ret = new LinkedList<>();
+		LinkedList<Pair<Vertex<E>, Vertex<E>>> ret = new LinkedList<>();
 
 		while (currentVertex != source) {
-			Graph<E>.Vertex prevVertex = backtrackMap.get(currentVertex);
+			Vertex<E> prevVertex = backtrackMap.get(currentVertex);
 
-			Graph<E>.Edge edge = prevVertex.getEdgeTo(currentVertex).get();
-			double newCapacity = edge.getWeight() - flowCache;
+			double capacity = prevVertex.getCostTo(currentVertex).getAsDouble();
+			double newCapacity = capacity - flowCache;
 			if (newCapacity > 0.0) {
-				edge.setWeight(newCapacity);
+				prevVertex.addToAdjListOrUpdate(currentVertex, newCapacity);
 			} else {
-				edge.remove();
+				prevVertex.removeFromAdjList(currentVertex);
 			}
 
-			Optional<Double> extantFlowThroughEdge = currentVertex.getEdgeTo(prevVertex).map(Graph.Edge::getWeight);
+			OptionalDouble extantFlowThroughEdge = currentVertex.getCostTo(prevVertex);
 			double totalFlowThroughEdge = extantFlowThroughEdge.orElse(0.0) + flowCache;
 
-			currentVertex.createOrUpdateEdgeTo(prevVertex, totalFlowThroughEdge);
+			currentVertex.addToAdjListOrUpdate(prevVertex, totalFlowThroughEdge);
 
-			ret.addFirst(edge);
+			ret.addFirst(new Pair<>(prevVertex, currentVertex));
 
 			currentVertex = prevVertex;
 		}
@@ -205,48 +207,46 @@ public class MaxFlow<E> {
 	}
 
 	private static <E> Optional<Pair<Double, Graph<E>>>
-			computeBlockingFlow(Graph<E>.Vertex source, Graph<E>.Vertex dest, Map<E, Integer> levels) {
-		Optional<Pair<Double, List<Graph<E>.Edge>>> oFirstFlow = computeGreedyAugmentingFlow(levels, source, dest);
+			computeBlockingFlow(Vertex<E> source, Vertex<E> dest, Map<E, Integer> levels) {
+		Optional<Pair<Double, List<Pair<Vertex<E>, Vertex<E>>>>> oFirstFlow
+				= computeGreedyAugmentingFlow(levels, source, dest);
 
 		if (!oFirstFlow.isPresent()) { return Optional.empty(); }
 
-		Pair<Double, List<Graph<E>.Edge>> firstFlow = oFirstFlow.get();
+		Pair<Double, List<Pair<Vertex<E>, Vertex<E>>>> firstFlow = oFirstFlow.get();
 
 		double extantFlow = firstFlow.getLeft();
 
 		final double dFirstFlow = extantFlow;
 		Graph<E> flowGraph = new Graph<>();
-		firstFlow.getRight().forEach((edge) ->
-			flowGraph.getOrCreateVertex(edge.getSource().getId())
-					.createOrUpdateEdgeTo(flowGraph.getOrCreateVertex(edge.getDestination().getId()), dFirstFlow));
+		firstFlow.getRight().forEach(
+				edge -> flowGraph.addEdgeOrUpdate(edge.getLeft().getData(), edge.getRight().getData(), dFirstFlow));
 
 		while (true) {
-			Optional<Pair<Double, List<Graph<E>.Edge>>> oNextFlow = computeGreedyAugmentingFlow(levels, source, dest);
+			Optional<Pair<Double, List<Pair<Vertex<E>, Vertex<E>>>>> oNextFlow
+					= computeGreedyAugmentingFlow(levels, source, dest);
 
 			if (!oNextFlow.isPresent()) { return Optional.of(new Pair<>(extantFlow, flowGraph)); }
 
-			Pair<Double, List<Graph<E>.Edge>> nextFlow = oNextFlow.get();
+			Pair<Double, List<Pair<Vertex<E>, Vertex<E>>>> nextFlow = oNextFlow.get();
 
 			extantFlow += nextFlow.getLeft();
 			nextFlow.getRight().forEach((edge) -> {
-				Graph<E>.Vertex flowSource, flowDestination;
-				flowSource      = flowGraph.getOrCreateVertex(edge.getSource().getId());
-				flowDestination = flowGraph.getOrCreateVertex(edge.getDestination().getId());
+				Vertex<E> flowSource, flowDestination;
+				flowSource      = flowGraph.addToVertexSet(edge.getLeft().getData());
+				flowDestination = flowGraph.addToVertexSet(edge.getRight().getData());
 
-				if (flowSource.hasEdgeTo(flowDestination)) {
-					Graph<E>.Edge flowEdge = flowSource.getEdgeTo(flowDestination).get();
-
-					flowEdge.setWeight(flowEdge.getWeight() + nextFlow.getLeft());
+				OptionalDouble oldFlow = flowSource.getCostTo(flowDestination);
+				if (oldFlow.isPresent()) {
+					flowSource.addToAdjListOrUpdate(flowDestination, oldFlow.getAsDouble() + nextFlow.getLeft());
 				} else {
-					flowSource.createOrUpdateEdgeTo(flowDestination, nextFlow.getLeft());
+					flowSource.addToAdjListOrUpdate(flowDestination, nextFlow.getLeft());
 				}
 			});
 		}
 	}
 
-	public static <E> OptionalDouble findMaximumFlow(Graph<E> graph, Graph<E>.Vertex source, Graph<E>.Vertex dest) {
-		Graph<E> residualGraph = new Graph<>(graph);
-
+	public static <E> OptionalDouble findMaximumFlow(Graph<E> graph, Vertex<E> source, Vertex<E> dest) {
 		MaxFlow<E> maxFlow = new MaxFlow<>(graph, source, dest);
 
 		maxFlow.execute();

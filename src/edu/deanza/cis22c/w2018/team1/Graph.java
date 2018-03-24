@@ -1,397 +1,238 @@
 package edu.deanza.cis22c.w2018.team1;
 
-import edu.deanza.cis22c.QueueInterface;
-import edu.deanza.cis22c.StackInterface;
+import edu.deanza.cis22c.Pair;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-public class Graph<E> implements Iterable<E> {
-	private Edge makeEdgeBetween(Vertex source, Vertex destination, double weight) {
-		Edge edge = new Edge(source, destination, weight);
+// All changes to graph class by Dimitriye Danilovic
 
-		source.outgoingEdges.put(destination, edge);
-		destination.incomingEdges.put(source, edge);
-
-		return edge;
-	}
-
-	public class Vertex {
-		private HashMap<Vertex, Edge> outgoingEdges = new HashMap<>();
-		private HashMap<Vertex, Edge> incomingEdges = new HashMap<>();
-
-		private E id;
-
-		private Vertex(E x) {
-			id = x;
-		}
-
-		public E getId() {
-			return id;
-		}
-
-		/**
-		 * Retrieves a collection containing all outgoing edges
-		 * from this vertex.
-		 *
-		 * Note: This collection is unmodifiable. Attempts to modify
-		 *       it will throw a runtime exception.
-		 *
-		 * @return   the outgoing edges from this vertex
-		 */
-		public Collection<Edge> outgoingEdges() {
-			return Collections.unmodifiableCollection(outgoingEdges.values());
-		}
-
-		/**
-		 * Retrieves a collection containing all incoming edges
-		 * to this vertex.
-		 *
-		 * Note: This collection is unmodifiable. Attempts to modify
-		 *       it will throw a runtime exception.
-		 *
-		 * @return   the incoming edges to this vertex
-		 */
-		public Collection<Edge> incomingEdges() {
-			return Collections.unmodifiableCollection(incomingEdges.values());
-		}
-
-		/**
-		 * Checks if an edge exists from this vertex to the given one.
-		 *
-		 * @param   destination   the destination to check for
-		 * @return   true if the edge exists, false otherwise
-		 */
-		public boolean hasEdgeTo(Vertex destination) {
-			return outgoingEdges.containsKey(destination);
-		}
-
-		/**
-		 * Retrieves the edge from this vertex to the given one
-		 * if present in an {@link java.util.Optional Optional}. Otherwise returns an empty {@code Optional}
-		 *
-		 * @param   destination   the destination whose edge to retrieve
-		 * @return   an {@code Optional} containing the edge if present
-		 */
-		public Optional<Edge> getEdgeTo(Vertex destination) {
-			return Optional.ofNullable(outgoingEdges.get(destination));
-		}
-
-		/**
-		 * Remove this vertex and all connected edges from the graph.
-		 */
-		public void remove() {
-			incomingEdges().forEach(Edge::remove);
-			outgoingEdges().forEach(Edge::remove);
-
-			Graph.this.vertexSet.remove(id, this);
-		}
-
-		private boolean isOwnedBy(Graph<E> graph) {
-			return Graph.this == graph;
-		}
-
-		/**
-		 * Creates an edge to the given vertex, or updates it
-		 * to the given weight if already present.
-		 *
-		 * @param   destination   the vertex to which to create / update the edge
-		 * @param   weight   the desired weight of the edge
-		 *
-		 * @return   the created / modified edge
-		 */
-		public Edge createOrUpdateEdgeTo(Vertex destination, double weight) {
-			if (!destination.isOwnedBy(Graph.this)) {
-				throw new IllegalArgumentException(this + " and " + destination + " are not in the same graph");
-			}
-
-			Edge edge = outgoingEdges.get(destination);
-
-			if (edge == null) {
-				edge = makeEdgeBetween(this, destination, weight);
-			} else {
-				edge.setWeight(weight);
-			}
-
-			return edge;
-		}
-
-		public void showAdjList() {
-			System.out.println("Adj List for " + id + ": " + outgoingEdges().parallelStream()
-					.map((e) -> e.getDestination().getId() + String.format("(%3.1f)", e.getWeight()))
-					.collect(Collectors.joining(", "))
-			);
-		}
-	}
-
-	public class Edge {
-		private Vertex source, destination;
-		private double weight;
-
-		private Edge(Vertex source, Vertex destination, double weight) {
-			this.source = source;
-			this.destination = destination;
-			this.weight = weight;
-		}
-
-		public double getWeight() {
-			return weight;
-		}
-
-		public void setWeight(double weight) {
-			this.weight = weight;
-		}
-
-		public Vertex getSource() {
-			return source;
-		}
-
-		public Vertex getDestination() {
-			return destination;
-		}
-
-		/**
-		 * Removes this edge from the graph.
-		 */
-		public void remove() {
-			source.outgoingEdges.remove(destination);
-			destination.outgoingEdges.remove(source);
-		}
-	}
-
-	// the graph id is all here --------------------------
-	private HashMap<E, Vertex> vertexSet = new HashMap<>();
-
-	// public graph methods --------------------------------
-	public Graph() { }
+public class Graph<E> {
+	// the graph data is all here --------------------------
+	private HashMap<E, Vertex<E> > vertexSet = new HashMap<>();
 
 	/**
-	 * Creates a graph which is a copy of the original
+	 * Adds an edge between the given vertices,
+	 * creating them if necessary.
 	 *
-	 * @param   original   the original to copy
+	 * @param   source   the id of the source vertex
+	 * @param   dest     the id of the destination vertex
+	 * @param   cost     the cost of the edge
 	 */
-	public Graph(Graph<E> original) {
-		for (Vertex vertex: original.vertexSet.values()) {
-			Vertex newVertex = getOrCreateVertex(vertex.getId());
-			for (Edge edge: vertex.outgoingEdges.values()) {
-				Vertex destVertex = getOrCreateVertex(edge.getDestination().getId());
-				newVertex.createOrUpdateEdgeTo(destVertex, edge.weight);
-			}
-		}
+	public void addEdgeOrUpdate(E source, E dest, double cost) {
+		Vertex<E> src, dst;
+
+		// put both source and dest into vertex list(s) if not already there
+		src = addToVertexSet(source);
+		dst = addToVertexSet(dest);
+
+		// add dest to source's adjacency list
+		src.addToAdjListOrUpdate(dst, cost);
 	}
 
 	/**
-	 * Returns vertex with given identifier if present,
-	 * creates and returns it otherwise.
+	 * Retrieves the vertex with the given data,
+	 * creating it if necessary.
 	 *
-	 * @param   id   the id of the vertex to get / create
-	 * @return   the vertex
+	 * @param   x   the data for the vertex
+	 * @return   the vertex with the given data
 	 */
-	public Vertex getOrCreateVertex(E id) {
-		Vertex vertex;
+	public Vertex<E> addToVertexSet(E x) {
+		Vertex<E> retVal;
+		Vertex<E> foundVertex;
 
-		vertex = vertexSet.get(id);
+		// find if Vertex already in the list:
+		foundVertex = vertexSet.get(x);
 
-		if (vertex == null) {
-			vertex = new Vertex(id);
-			vertexSet.put(id, vertex);
+		if ( foundVertex != null ) // found it, so return it
+		{
+			return foundVertex;
 		}
 
-		return vertex;
+		// the vertex not there, so create one
+		retVal = new Vertex<>(x);
+		vertexSet.put(x, retVal);
+
+		return retVal;   // should never happen
 	}
 
 	/**
-	 * Returns an {@link java.util.Optional Optional} containing the vertex with the
-	 * given identifier if present, or an empty one otherwise.
+	 * Gets the vertex with the given data if present
 	 *
-	 * @param   id   the id of the vertex to attempt to retrieve
-	 * @return an {@code Optional} containing the vertex if present
+	 * @param   x   the data for which to get a vertex
+	 *
+	 * @return   the vertex if found, null otherwise
 	 */
-	public Optional<Vertex> getVertex(E id) {
-		return Optional.ofNullable(vertexSet.get(id));
+	public Vertex<E> getVertex(E x) {
+		return vertexSet.get(x);
 	}
 
+	/**
+	 * Removes the vertex with the given data
+	 *
+	 * @param   x   the data of the vertex to remove
+	 * @return   true if there was a vertex to remove
+	 */
+	public boolean removeVertex(E x) {
+		Vertex<E> vertex = getVertex(x);
+		if (vertex == null) { return false; }
+
+		vertex.incomingEdges.forEach((v) -> v.removeFromAdjList(vertex));
+		vertexSet.remove(x);
+
+		return true;
+	}
+
+	/**
+	 * Removes the edge between the given vertices
+	 * if present.
+	 *
+	 * @param   start   the data of the source vertex
+	 * @param   end     the data of the destination vertex
+	 *
+	 * @return   true if there was an edge to remove
+	 */
+	public boolean remove(E start, E end) {
+		Vertex<E> startVertex = vertexSet.get(start);
+		if (startVertex == null) { return false; }
+
+		Vertex<E> endVertex = vertexSet.get(end);
+
+		return endVertex != null && startVertex.removeFromAdjList(endVertex);
+	}
+
+	/**
+	 * Prints the graph's adjacency table to System.out
+	 */
 	public void showAdjTable() {
-		Iterator<Entry<E, Vertex>> iter;
+		// It may be preferable to have this method accept a Writer object
+		Iterator<Entry<E, Vertex<E>>> iter;
 
-		System.out.println("------------------------ ");
+		System.out.println( "------------------------ ");
 		iter = vertexSet.entrySet().iterator();
-		while (iter.hasNext()) {
+		while( iter.hasNext() )
+		{
 			(iter.next().getValue()).showAdjList();
 		}
 		System.out.println();
 	}
 
+	/**
+	 * Clears the graph data so as to be logically equivalent
+	 * to a newly created graph.
+	 */
 	public void clear() {
 		vertexSet.clear();
 	}
 
-	@Override
-	/**
-	 * Returns an iterator which is guaranteed to iterate
-	 * over all vertices of the graph, even if discontiguous,
-	 * but does so in an arbitrary order.
-	 *
-	 * @return   an Iterator
-	 */
-	public Iterator<E> iterator() {
-		return vertexSet.keySet().iterator();
+	protected void unvisitVertices() {
+		// Could be replaced with the following one-liner:
+		// vertexSet.valueSet().forEach(Vertex::unvisit)
+
+		Iterator<Entry<E, Vertex<E>>> iter;
+
+		iter = vertexSet.entrySet().iterator();
+		while( iter.hasNext() )
+		{
+			iter.next().getValue().unvisit();
+		}
 	}
 
-	public Map<E, Vertex> vertices() {
+	/**
+	 * Gets the graph's vertex set as an unmodifiable map.
+	 *
+	 * @return   an unmodifiable map representing the graph's vertex set
+	 */
+	public Map<E, Vertex<E>> getVertexSet() {
+		// It may be desirable to make the map modifiable through
+		// a wrapper layer which preserves the graph's invariants
+		// however I believe this falls outside the scope of permitted modifications
 		return Collections.unmodifiableMap(vertexSet);
 	}
 
-	private class GraphIterator implements Iterator<E> {
-		Consumer<Vertex> addToPool;
-		Supplier<Vertex> pollPool;
-		BooleanSupplier isPoolEmpty;
+	/**
+	 * Applies the provided visitor to a breadth-first traversal
+	 *
+	 * @param startElement the element to begin traversing from
+	 * @param visitor
+	 */
+	public void breadthFirstTraversal(E startElement, Consumer<E> visitor)
+	{
+		unvisitVertices();
 
-		Set<Vertex> visited = new HashSet<>();
+		Vertex<E> startVertex = vertexSet.get(startElement);
+		breadthFirstTraversalHelper( startVertex, visitor );
+	}
 
-		GraphIterator(Consumer<Vertex> addToPool, Supplier<Vertex> pollPool, BooleanSupplier isPoolEmpty) {
-			this.addToPool = addToPool;
-			this.pollPool = pollPool;
-			this.isPoolEmpty = isPoolEmpty;
-		}
+	/**
+	 * Applies the provided visitor to a depth-first traversal
+	 *
+	 * @param startElement the element to begin traversing from
+	 * @param visitor
+	 */
+	public void depthFirstTraversal(E startElement, Consumer<E> visitor)
+	{
+		unvisitVertices();
 
-		@Override
-		public boolean hasNext() {
-			return !isPoolEmpty.getAsBoolean();
-		}
+		Vertex<E> startVertex = vertexSet.get(startElement);
+		depthFirstTraversalHelper( startVertex, visitor );
+	}
 
-		@Override
-		public E next() {
-			Vertex next = pollPool.get();
+	protected void breadthFirstTraversalHelper(Vertex<E> startVertex,
+	                                           Consumer<E> visitor)
+	{
+		LinkedQueue<Vertex<E>> vertexQueue = new LinkedQueue<>();
+		E startData = startVertex.getData();
 
-			for (Edge edge: next.outgoingEdges()) {
-				Vertex destination = edge.getDestination();
-				if (visited.add(destination)) {
-					addToPool.accept(destination);
+		startVertex.visit();
+		visitor.accept(startData);
+		vertexQueue.enqueue(startVertex);
+		while( !vertexQueue.isEmpty() ) {
+			Vertex<E> nextVertex = vertexQueue.dequeue();
+			Iterator<Map.Entry<E, Pair<Vertex<E>, Double>>> iter =
+					nextVertex.getAdjList().entrySet().iterator(); // iterate adjacency list
+
+			while( iter.hasNext() ) {
+				Entry<E, Pair<Vertex<E>, Double>> nextEntry = iter.next();
+				Vertex<E> neighborVertex = nextEntry.getValue().getLeft();
+				if( !neighborVertex.isVisited() )
+				{
+					vertexQueue.enqueue(neighborVertex);
+					neighborVertex.visit();
+					visitor.accept(neighborVertex.getData());
 				}
 			}
-
-			return next.getId();
 		}
-	}
+	} // end breadthFirstTraversalHelper
 
-	private Iterator<E> _breadthFirstIterator(Vertex startVertex) {
-		QueueInterface<Vertex> queue = new LinkedQueue<>();
+	public void depthFirstTraversalHelper(Vertex<E> startVertex, Consumer<E> visitor)
+	{
+		LinkedStack<Vertex<E>> vertexStack = new LinkedStack<>();
+		E startData = startVertex.getData();
 
-		queue.enqueue(startVertex);
+		startVertex.visit();
+		visitor.accept(startData);
+		vertexStack.push(startVertex);
+		while( !vertexStack.isEmpty() ) {
+			Vertex<E> nextVertex = vertexStack.pop();
+			Iterator<Map.Entry<E, Pair<Vertex<E>, Double>>> iter =
+					nextVertex.getAdjList().entrySet().iterator(); // iterate adjacency list
 
-		return new GraphIterator(queue::enqueue, queue::dequeue, queue::isEmpty);
-	}
-
-	/**
-	 * Returns an iterator which iterates over the graph in
-	 * breadth-first order, starting at the specified element.
-	 *
-	 * Note: This iterator will not iterate over all elements of a
-	 *       discontiguous graph.
-	 *
-	 * @param   startElement   the element of the graph to iterate from
-	 * @return   an Iterator
-	 */
-	public Iterator<E> breadthFirstIterator(E startElement) {
-		Vertex startVertex = vertexSet.get(startElement);
-		if (startVertex != null) {
-			return _breadthFirstIterator(startVertex);
-		} else {
-			return Collections.emptyIterator();
+			while( iter.hasNext() ) {
+				Entry<E, Pair<Vertex<E>, Double>> nextEntry = iter.next();
+				Vertex<E> neighborVertex = nextEntry.getValue().getLeft();
+				if( !neighborVertex.isVisited() )
+				{
+					vertexStack.push(neighborVertex);
+					neighborVertex.visit();
+					visitor.accept(neighborVertex.getData());
+				}
+			}
 		}
-	}
-
-	/**
-	 * Returns an iterator which iterates over the graph in
-	 * breadth-first order, starting at an arbitrary element.
-	 *
-	 * Note: This iterator will not iterate over all elements of a
-	 *       discontiguous graph.
-	 *
-	 * @return   an Iterator
-	 */
-	public Iterator<E> breadthFirstIterator() {
-		if (vertexSet.isEmpty()) {
-			return Collections.emptyIterator();
-		} else {
-			return _breadthFirstIterator(vertexSet.values().iterator().next());
-		}
-	}
-
-	private Iterator<E> _depthFirstIterator(Vertex startVertex) {
-		StackInterface<Vertex> stack = new LinkedStack<>();
-
-		stack.push(startVertex);
-
-		return new GraphIterator(stack::push, stack::pop, stack::isEmpty);
-	}
-
-	/**
-	 * Returns an iterator which iterates over the graph in
-	 * depth-first order, starting at the specified element.
-	 *
-	 * Note: This iterator will not iterate over all elements of a
-	 *       discontiguous graph.
-	 *
-	 * @param   startElement   the element of the graph to iterate from
-	 * @return   an Iterator
-	 */
-	public Iterator<E> depthFirstIterator(E startElement) {
-		Vertex startVertex = vertexSet.get(startElement);
-		if (startVertex != null) {
-			return _depthFirstIterator(startVertex);
-		} else {
-			return Collections.emptyIterator();
-		}
-	}
-
-	/**
-	 * Returns an iterator which iterates over the graph in
-	 * depth-first order, starting at an arbitrary element.
-	 *
-	 * Note: This iterator will not iterate over all elements of a
-	 *       discontiguous graph.
-	 *
-	 * @return   an Iterator
-	 */
-	public Iterator<E> depthFirstIterator() {
-		if (vertexSet.isEmpty()) {
-			return Collections.emptyIterator();
-		} else {
-			return _depthFirstIterator(vertexSet.values().iterator().next());
-		}
-	}
-
-	/**
-	 * Breadth-first traversal from the parameter startElement
-	 *
-	 * @deprecated   use {@link #breadthFirstIterator(Object) breadthFirstIterator} instead
-	 */
-	@Deprecated
-	public void breadthFirstTraversal(E startElement, Consumer<E> visitor) {
-		breadthFirstIterator(startElement).forEachRemaining(visitor);
-	}
-
-	/**
-	 * Depth-first traversal from the parameter startElement
-	 *
-	 * @deprecated   use {@link #depthFirstIterator(Object) depthFirstIterator} instead
-	 */
-	@Deprecated
-	public void depthFirstTraversal(E startElement, Consumer<E> visitor) {
-		depthFirstIterator(startElement).forEachRemaining(visitor);
 	}
 
 
@@ -402,3 +243,4 @@ public class Graph<E> implements Iterable<E> {
 
 
 }
+
