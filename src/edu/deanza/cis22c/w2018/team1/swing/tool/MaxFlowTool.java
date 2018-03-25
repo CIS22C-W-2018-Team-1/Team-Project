@@ -4,11 +4,8 @@ import edu.deanza.cis22c.w2018.team1.structure.graph.maxflow.MaxFlow;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 import edu.deanza.cis22c.w2018.team1.swing.TabularLogFrame;
 
-import javax.swing.JMenuBar;
-import javax.swing.JOptionPane;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;

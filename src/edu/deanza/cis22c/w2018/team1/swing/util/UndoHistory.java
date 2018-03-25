@@ -2,7 +2,6 @@ package edu.deanza.cis22c.w2018.team1.swing.util;
 
 import edu.deanza.cis22c.w2018.team1.structure.stack.LinkedStack;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;

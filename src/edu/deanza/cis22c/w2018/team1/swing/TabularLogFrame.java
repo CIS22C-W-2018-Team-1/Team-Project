@@ -1,13 +1,9 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import com.sun.deploy.panel.JreTableModel;
-
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -15,16 +11,13 @@ import javax.swing.JTable;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableColumnModel;
-import javax.swing.table.TableModel;
 import java.awt.BorderLayout;
 import java.awt.FontMetrics;
-import java.awt.HeadlessException;
 import java.awt.event.ActionEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.List;
 import java.util.StringJoiner;

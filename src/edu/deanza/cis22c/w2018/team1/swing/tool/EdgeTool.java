@@ -1,6 +1,5 @@
 package edu.deanza.cis22c.w2018.team1.swing.tool;
 
-import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
 import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
