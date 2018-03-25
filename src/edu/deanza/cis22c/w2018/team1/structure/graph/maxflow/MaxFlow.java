@@ -79,6 +79,8 @@ public class MaxFlow<E> extends Graph<E> {
 	 */
 	public void computeLevels() {
 		unvisitVertices();
+		source.visit();
+
 		int level = 1;
 
 		List<Vertex<E>> currentLevel = Collections.singletonList(source);
