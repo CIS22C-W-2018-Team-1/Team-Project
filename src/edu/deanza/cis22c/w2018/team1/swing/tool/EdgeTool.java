@@ -1,6 +1,9 @@
 package edu.deanza.cis22c.w2018.team1.swing.tool;
 
+import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
+import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
+import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
 import edu.deanza.cis22c.w2018.team1.swing.util.Vector2;
 
 import javax.swing.JOptionPane;
@@ -21,6 +24,7 @@ public class EdgeTool<E> implements MouseInputListener {
 	private GraphPanel<E> panel;
 	private Point mousePos;
 	private List<ToolListener> listeners = new LinkedList<>();
+	private UndoHistory history;
 
 	public void addToolListener(ToolListener l) {
 		listeners.add(l);
@@ -30,8 +34,9 @@ public class EdgeTool<E> implements MouseInputListener {
 		return listeners.remove(l);
 	}
 
-	public EdgeTool(GraphPanel<E> panel) {
+	public EdgeTool(GraphPanel<E> panel, UndoHistory history) {
 		this.panel = panel;
+		this.history = history;
 	}
 
 	private static Polygon arrowHead = new Polygon();
@@ -116,6 +121,7 @@ public class EdgeTool<E> implements MouseInputListener {
 				if (sWeight != null) {
 					Double weight = Double.valueOf(sWeight);
 					panel.getGraph().addEdgeOrUpdate(source, vert, weight);
+					history.addToHistory(new EdgeUndoItem<>(panel, source, vert, weight));
 
 					source = null;
 					edgeToolOverlay.repaint();
@@ -126,6 +132,31 @@ public class EdgeTool<E> implements MouseInputListener {
 		});
 
 		e.consume();
+	}
+
+	private static class EdgeUndoItem<E> implements UndoItem {
+		GraphPanel<E> pane;
+		E source, dest;
+		double weight;
+
+		public EdgeUndoItem(GraphPanel<E> pane, E source, E dest, double weight) {
+			this.pane = pane;
+			this.source = source;
+			this.dest = dest;
+			this.weight = weight;
+		}
+
+		@Override
+		public void undo() {
+			pane.getGraph().removeEdge(source, dest);
+			pane.repaint();
+		}
+
+		@Override
+		public void redo() {
+			pane.getGraph().addEdgeOrUpdate(source, dest, weight);
+			pane.repaint();
+		}
 	}
 
 	@Override

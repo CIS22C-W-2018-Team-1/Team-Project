@@ -18,6 +18,8 @@ import edu.deanza.cis22c.w2018.team1.swing.tool.EdgeTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowVisualizeTool;
 import edu.deanza.cis22c.w2018.team1.swing.util.OrderedMouseListener;
+import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
+import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
 
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
@@ -28,6 +30,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.OverlayLayout;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -36,7 +39,9 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Toolkit;
 import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.BufferedReader;
@@ -52,6 +57,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -67,12 +73,17 @@ public class Main implements Runnable {
 		}
 	}
 
+	private static <E> UndoItem removeEdgeUndoItem(Graph<E> graph, E source, E dest, double weight) {
+		return UndoItem.create(
+				() -> graph.addEdgeOrUpdate(source, dest, weight),
+				() -> graph.removeEdge(source, dest));
+	}
+
 	private static <E> JFrame buildGraphFrame(Supplier<E> vertIdSupplier, Type elemType) {
 		JFrame frame = new JFrame();
 
 		GraphPanel<E> pane = new GraphPanel<>();
-		Graph<E> graph = new Graph<>();
-		pane.setGraph(graph);
+		pane.setGraph(new Graph<>());
 
 		JPanel layers = new JPanel() {
 			@Override
@@ -85,7 +96,9 @@ public class Main implements Runnable {
 
 		ContextMenu<Set<E>> rightClickMenu = new ContextMenu<>();
 
-		GraphSelectionHandler<E> selector = new GraphSelectionHandler<>(pane);
+		UndoHistory history = new UndoHistory();
+
+		GraphSelectionHandler<E> selector = new GraphSelectionHandler<>(pane, history);
 
 		rightClickMenu.setContextSupplier(p -> selector.getSelection());
 
@@ -93,13 +106,23 @@ public class Main implements Runnable {
 			E vertex = vertIdSupplier.get();
 			pane.getGraph().addVertex(vertex);
 			pane.setVertexPosition(vertex, e.getLocation());
+			history.addToHistory(UndoItem.create(
+					() -> {
+						pane.getGraph().removeVertex(vertex);
+						pane.repaint();
+					},
+					() -> {
+						pane.getGraph().addVertex(vertex);
+						pane.setVertexPosition(vertex, e.getLocation());
+						pane.repaint();
+					}));
 			pane.repaint();
 		});
 		newNode.setText("New Node");
 
 		OrderedMouseListener listeners = new OrderedMouseListener();
 
-		EdgeTool<E> edgeTool = new EdgeTool<>(pane);
+		EdgeTool<E> edgeTool = new EdgeTool<>(pane, history);
 		JMenuItem addEdge = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
 			edgeTool.setSource(e.getContext().iterator().next());
 
@@ -138,14 +161,41 @@ public class Main implements Runnable {
 		vMaxFlow.setText("Visualize max flow");
 
 		JMenuItem deleteVertices = rightClickMenu.addMenuItem( s -> !s.isEmpty(), e -> {
-			e.getContext().forEach(pane.getGraph()::removeVertex);
-			pane.repaint();
+			Graph<E> graph = pane.getGraph();
+			UndoItem item = UndoItem.create( pane::repaint, pane::repaint );
+			for (E vertex: e.getContext()) {
+				for (E source: graph.getDirectPredecessors(vertex).get()) {
+					item = item.compose(removeEdgeUndoItem(graph, vertex, source,
+							graph.getEdgeCost(source, vertex).getAsDouble()));
+				}
+				for (E dest: graph.getDirectSuccessors(vertex).get()) {
+					item = item.compose(removeEdgeUndoItem(graph, dest, vertex,
+							graph.getEdgeCost(vertex, dest).getAsDouble()));
+				}
+				item = item.compose(UndoItem.create(() -> graph.addVertex(vertex), () -> {
+					graph.removeVertex(vertex);
+				}));
+			}
+			item.redo();
+			history.addToHistory(item);
 		} );
 		deleteVertices.setText("Delete");
 
 		JMenuItem deleteEdges = rightClickMenu.addMenuItem( s -> s.size() >= 2, e -> {
+			Graph<E> graph = pane.getGraph();
 			Set<E> context = e.getContext();
-			context.forEach( s -> context.forEach( d -> pane.getGraph().removeEdge(s, d) ) );
+			UndoItem item = UndoItem.create( pane::repaint, pane::repaint );
+			for (E source: context) {
+				for (E dest: context) {
+					OptionalDouble weight = graph.getEdgeCost(source, dest);
+					if (weight.isPresent()) {
+						double w = weight.getAsDouble();
+						item = item.compose(UndoItem.create(
+								() -> graph.addEdgeOrUpdate(source, dest, w),
+								() -> graph.removeEdge(source, dest)));
+					}
+				}
+			}
 			pane.repaint();
 		});
 		deleteEdges.setText("Break connecting edges");
@@ -207,12 +257,13 @@ public class Main implements Runnable {
 
 		frame.setContentPane(layers);
 
-		frame.setJMenuBar(buildMenuBar(frame, pane, layers, elemType));
+		frame.setJMenuBar(buildMenuBar(frame, pane, history, layers, elemType));
 
 		return frame;
 	}
 
-	private static <E> JMenuBar buildMenuBar(JFrame frame, GraphPanel<E> pane, JPanel layers, Type elemType) {
+	private static <E> JMenuBar buildMenuBar(JFrame frame, GraphPanel<E> pane, UndoHistory history,
+	                                         JPanel layers, Type elemType) {
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu file = new JMenu("File");
@@ -236,6 +287,8 @@ public class Main implements Runnable {
 					});
 
 					pane.repaint();
+
+					history.clear();
 				} catch (IOException ex) {} // Do nothing if the file's not found
 			}
 		});
@@ -255,6 +308,27 @@ public class Main implements Runnable {
 		file.add(save);
 
 		menuBar.add(file);
+
+		JMenu edit = new JMenu("Edit");
+
+		JMenuItem undo = new JMenuItem("Undo");
+		undo.addActionListener(e -> history.undo());
+		undo.setEnabled(false);
+		undo.setAccelerator(KeyStroke.getKeyStroke('Z', Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
+		edit.add(undo);
+
+		history.addListener(e -> undo.setEnabled(history.canUndo()));
+
+		JMenuItem redo = new JMenuItem("Redo");
+		redo.addActionListener(e -> history.redo());
+		redo.setEnabled(false);
+		redo.setAccelerator(KeyStroke.getKeyStroke('Z',
+				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask() | InputEvent.SHIFT_DOWN_MASK));
+		edit.add(redo);
+
+		history.addListener(e -> redo.setEnabled(history.canRedo()));
+
+		menuBar.add(edit);
 
 		JMenu view = new JMenu("View");
 

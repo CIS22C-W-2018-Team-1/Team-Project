@@ -1,6 +1,8 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
+import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
 import edu.deanza.cis22c.w2018.team1.swing.util.Vector2;
 
 import javax.swing.event.MouseInputListener;
@@ -22,6 +24,8 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 	private Rectangle2D selecting;
 	private Map<E, Point2D> posCache;
 	private Vector2 dragStart;
+	private UndoHistory history;
+	private boolean headItemValid;
 
 	private GraphPanel<E> pane;
 
@@ -41,8 +45,11 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		return listeners.remove(l);
 	}
 
-	public GraphSelectionHandler(GraphPanel<E> pane) {
+	public GraphSelectionHandler(GraphPanel<E> pane, UndoHistory history) {
 		this.pane = pane;
+		this.history = history;
+
+		history.addListener(e -> headItemValid = false);
 	}
 
 	@Override
@@ -69,12 +76,15 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		Optional<E> vertex = pane.getVertexAt(e.getPoint());
 
 		if (!(vertex.isPresent() && selection.contains(vertex.get())) && !e.isShiftDown()) {
+			headItemValid = false;
 			selection.clear();
 			pane.repaint();
 		}
 
 		if (vertex.isPresent()) {
-			selection.add(vertex.get());
+			if (selection.add(vertex.get())) {
+				headItemValid = false;
+			}
 
 			if (e.getButton() == MouseEvent.BUTTON1) {
 				posCache = new HashMap<>();
@@ -119,6 +129,21 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		Vector2 mousePos = new Vector2(e.getPoint());
+		if (posCache != null) {
+			Vector2 dP = mousePos.minus(dragStart);
+			if (!headItemValid) {
+				history.addToHistory(UndoItem.create(pane::repaint, pane::repaint));
+			}
+			for (E vertex: selection) {
+				Point2D oldPos = posCache.get(vertex);
+				Point2D newPos = dP.plus(oldPos).asPoint();
+				pane.setVertexPosition(vertex, newPos);
+				history.fuseToHistory(UndoItem.create(
+						() -> pane.setVertexPosition(vertex, oldPos),
+						() -> pane.setVertexPosition(vertex, newPos)));
+			}
+		}
 		posCache = null;
 		dragStart = null;
 

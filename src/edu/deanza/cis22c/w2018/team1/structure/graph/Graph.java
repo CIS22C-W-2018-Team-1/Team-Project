@@ -72,6 +72,12 @@ public class Graph<E> implements Iterable<E> {
 				.map(Collections::unmodifiableSet);
 	}
 
+	public Optional<Set<E>> getDirectPredecessors(E dest) {
+		return Optional.ofNullable(vertexSet.get(dest))
+				.map(v -> v.incomingEdges)
+				.map(Collections::unmodifiableSet);
+	}
+
 	/**
 	 * Removes the edge between the given vertices
 	 * if present.
@@ -157,7 +163,7 @@ public class Graph<E> implements Iterable<E> {
 		Vertex<E> vertex = vertexSet.get(data);
 		if (vertex == null) { return false; }
 
-		vertex.incomingEdges.forEach((v) -> v.removeFromAdjList(vertex));
+		vertex.incomingEdges.forEach((v) -> removeEdge(v, data));
 		vertexSet.remove(data);
 
 		return true;

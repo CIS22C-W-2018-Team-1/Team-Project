@@ -14,7 +14,7 @@ import java.util.Set;
 public class Vertex<E> {
 	// Intentionally package private to make it usable by the graph.
 	// One of the reasons I'd prefer Vertex to be an inner class.
-	Set<Vertex<E>> incomingEdges = new HashSet<>();
+	Set<E> incomingEdges = new HashSet<>();
 
 	private HashMap<E, Pair<Vertex<E>, Double>> adjList = new HashMap<>();
 	private E data;
@@ -51,7 +51,7 @@ public class Vertex<E> {
 		Pair<Vertex<E>, Double> existingEdge = adjList.get(neighbor.getData());
 		if (existingEdge == null) {
 			adjList.put(neighbor.getData(), new Pair<>(neighbor, cost));
-			neighbor.incomingEdges.add(this);
+			neighbor.incomingEdges.add(data);
 		} else {
 			existingEdge.setRight(cost);
 		}
