@@ -8,6 +8,7 @@ import com.google.gson.JsonParser;
 import edu.deanza.cis22c.w2018.team1.serialization.GraphSerializer;
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
 import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
+import edu.deanza.cis22c.w2018.team1.swing.ConsoleFrame;
 import edu.deanza.cis22c.w2018.team1.swing.ContextMenu;
 import edu.deanza.cis22c.w2018.team1.swing.FileHandler;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
@@ -56,6 +57,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -226,16 +228,36 @@ public class Main implements Runnable {
 
 			maxFlowTool.addToolListener( () -> listeners.removeListener(maxFlowTool) );
 		});
-		maxFlow.setText("Find max flow to");
+		maxFlow.setText("Find max flow to...");
 
-		JMenuItem vMaxFlow = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
-			MaxFlowVisualizeTool<E> tool = new MaxFlowVisualizeTool<>(frame, pane, e.getContext().iterator().next());
-
-			listeners.addListener(tool);
-
-			tool.addToolListener( () -> listeners.removeListener(tool) );
+		JMenuItem bfs = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
+			ConsoleFrame console = new ConsoleFrame();
+			console.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			PrintWriter pw = new PrintWriter(console.consoleWriter());
+			pw.println("Breadth-first traversal:\n");
+			pane.getGraph().breadthFirstTraversal(e.getContext().iterator().next(), pw::println);
+			console.setVisible(true);
 		});
-		vMaxFlow.setText("Visualize max flow");
+		bfs.setText("Show breadth-first traversal");
+
+		JMenuItem dfs = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
+			ConsoleFrame console = new ConsoleFrame();
+			console.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			PrintWriter pw = new PrintWriter(console.consoleWriter());
+			pw.println("Depth-first traversal:\n");
+			pane.getGraph().depthFirstTraversal(e.getContext().iterator().next(), pw::println);
+			console.setVisible(true);
+		});
+		dfs.setText("Show depth-first traversal");
+
+//		JMenuItem vMaxFlow = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
+//			MaxFlowVisualizeTool<E> tool = new MaxFlowVisualizeTool<>(frame, pane, e.getContext().iterator().next());
+//
+//			listeners.addListener(tool);
+//
+//			tool.addToolListener( () -> listeners.removeListener(tool) );
+//		});
+//		vMaxFlow.setText("Visualize max flow");
 
 		Consumer<ContextActionEvent<? extends Set<E>>> deleter = e -> {
 			Graph<E> graph = pane.getGraph();
