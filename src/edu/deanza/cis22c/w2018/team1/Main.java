@@ -137,11 +137,18 @@ public class Main implements Runnable {
 		});
 		vMaxFlow.setText("Visualize max flow");
 
-		JMenuItem delete = rightClickMenu.addMenuItem( s -> !s.isEmpty(), e -> {
+		JMenuItem deleteVertices = rightClickMenu.addMenuItem( s -> !s.isEmpty(), e -> {
 			e.getContext().forEach(pane.getGraph()::removeVertex);
 			pane.repaint();
 		} );
-		delete.setText("Delete");
+		deleteVertices.setText("Delete");
+
+		JMenuItem deleteEdges = rightClickMenu.addMenuItem( s -> s.size() >= 2, e -> {
+			Set<E> context = e.getContext();
+			context.forEach( s -> context.forEach( d -> pane.getGraph().removeEdge(s, d) ) );
+			pane.repaint();
+		});
+		deleteEdges.setText("Break connecting edges");
 
 		listeners.addListener(rightClickMenu.getTriggerListener());
 		listeners.addListener(selector);
