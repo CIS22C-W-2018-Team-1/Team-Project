@@ -1,9 +1,9 @@
 package edu.deanza.cis22c.w2018.team1.swing.overlay;
 
-import edu.deanza.cis22c.w2018.team1.Vector2;
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
 import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
+import edu.deanza.cis22c.w2018.team1.swing.util.Vector2;
 
 import javax.swing.JPanel;
 import java.awt.Color;

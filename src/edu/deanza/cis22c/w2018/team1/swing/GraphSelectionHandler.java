@@ -1,7 +1,7 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.w2018.team1.Vector2;
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.swing.util.Vector2;
 
 import javax.swing.event.MouseInputListener;
 import java.awt.event.MouseEvent;
