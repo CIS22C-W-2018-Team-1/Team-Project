@@ -35,6 +35,7 @@ import javax.swing.OverlayLayout;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -279,6 +280,7 @@ public class Main implements Runnable {
 
 		JMenu file = new JMenu("File");
 		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setFileFilter(new FileNameExtensionFilter("JSON file", "json"));
 
 		JMenuItem open = new JMenuItem("Open");
 		open.addActionListener(e -> {
