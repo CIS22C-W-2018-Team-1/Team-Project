@@ -1,4 +1,4 @@
-package edu.deanza.cis22c.w2018.team1.swing;
+package edu.deanza.cis22c.w2018.team1.swing.util;
 
 import java.awt.event.ActionEvent;
 import java.awt.geom.Point2D;

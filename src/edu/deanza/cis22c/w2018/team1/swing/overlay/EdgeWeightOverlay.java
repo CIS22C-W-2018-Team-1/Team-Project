@@ -1,15 +1,15 @@
-package edu.deanza.cis22c.w2018.team1.swing;
+package edu.deanza.cis22c.w2018.team1.swing.overlay;
 
 import edu.deanza.cis22c.w2018.team1.Vector2;
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
 import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
+import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-import java.util.Collection;
 
 public class EdgeWeightOverlay<E> extends JPanel {
 	private GraphPanel<E> graphPanel;

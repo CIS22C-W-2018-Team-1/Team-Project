@@ -1,4 +1,4 @@
-package edu.deanza.cis22c.w2018.team1.swing;
+package edu.deanza.cis22c.w2018.team1.swing.util;
 
 import javax.swing.event.MouseInputListener;
 import java.awt.event.MouseEvent;

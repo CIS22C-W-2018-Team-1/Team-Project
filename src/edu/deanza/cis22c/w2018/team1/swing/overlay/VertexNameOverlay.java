@@ -1,28 +1,21 @@
-package edu.deanza.cis22c.w2018.team1.swing;
+package edu.deanza.cis22c.w2018.team1.swing.overlay;
 
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-import java.util.Map;
-import java.util.Objects;
 
-public class VertexLevelOverlay<E> extends JPanel {
+public class VertexNameOverlay<E> extends JPanel {
 	private GraphPanel<E> graphPanel;
-	private Map<E, Integer> levels;
 
-	public VertexLevelOverlay(GraphPanel<E> graphPanel, Map<E, Integer> levels) {
+	public VertexNameOverlay(GraphPanel<E> graphPanel) {
 		this.graphPanel = graphPanel;
-		this.levels = levels;
 
 		setOpaque(false);
-	}
-
-	public void setLevels(Map<E, Integer> levels) {
-		this.levels = levels;
 	}
 
 	@Override
@@ -39,7 +32,8 @@ public class VertexLevelOverlay<E> extends JPanel {
 					g2d.setStroke(style.getLeft());
 					g2d.setColor(style.getRight());
 
-					g2d.drawString(Objects.toString(levels.get(vertex)), (int) p.getX(), (int) p.getY());
+					g2d.drawString(vertex.toString(),
+							(int) (p.getX() + graphPanel.getVertexRadius() + 10), (int) p.getY());
 				}
 			)
 		);

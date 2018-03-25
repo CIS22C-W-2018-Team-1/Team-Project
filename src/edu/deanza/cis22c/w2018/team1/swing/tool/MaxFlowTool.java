@@ -1,6 +1,7 @@
-package edu.deanza.cis22c.w2018.team1.swing;
+package edu.deanza.cis22c.w2018.team1.swing.tool;
 
 import edu.deanza.cis22c.w2018.team1.structure.graph.maxflow.MaxFlow;
+import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 
 import javax.swing.JOptionPane;
 import java.awt.event.MouseEvent;
