@@ -2,10 +2,14 @@ package edu.deanza.cis22c.w2018.team1.swing.tool;
 
 import edu.deanza.cis22c.w2018.team1.structure.graph.maxflow.MaxFlow;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
+import edu.deanza.cis22c.w2018.team1.swing.TabularLogFrame;
 
+import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +19,9 @@ public class MaxFlowTool<E> implements MouseListener {
 	private GraphPanel<E> panel;
 	private E source;
 	private List<ToolListener> listeners = new LinkedList<>();
+	private List<String[]> log = new ArrayList<>();
+	private TabularLogFrame logFrame
+			= new TabularLogFrame("Max Flows", new String[]{"source", "sink", "max flow"}, log);
 
 	public void addToolListener(ToolListener l) {
 		listeners.add(l);
@@ -24,9 +31,11 @@ public class MaxFlowTool<E> implements MouseListener {
 		return listeners.remove(l);
 	}
 
-
-	public MaxFlowTool(GraphPanel<E> panel, E source) {
+	public MaxFlowTool(GraphPanel<E> panel) {
 		this.panel = panel;
+	}
+
+	public void setSource(E source) {
 		this.source = source;
 	}
 
@@ -42,11 +51,12 @@ public class MaxFlowTool<E> implements MouseListener {
 			if (maxFlow.isPresent()) {
 				double flow = maxFlow.getAsDouble();
 
-				JOptionPane.showMessageDialog(panel, "Maximum flow is " + flow);
+				log.add(new String[]{source.toString(), vert.toString(), String.valueOf(flow)});
 			} else {
-				JOptionPane.showMessageDialog(panel, "No solution.");
+				log.add(new String[]{source.toString(), vert.toString(), "N/A"});
 			}
-
+			logFrame.setVisible(true);
+			logFrame.notifyDataChanged();
 			listeners.forEach(ToolListener::actionPerformed);
 		});
 

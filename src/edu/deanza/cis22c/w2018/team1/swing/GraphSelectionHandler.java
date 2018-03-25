@@ -50,7 +50,6 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		if (e.getButton() != MouseEvent.BUTTON1) {
 			return;
 		}
-		System.out.println(e.getButton());
 
 		Optional<E> vertex = pane.getVertexAt(e.getPoint());
 

@@ -50,6 +50,7 @@ import java.io.Writer;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -98,31 +99,32 @@ public class Main implements Runnable {
 
 		OrderedMouseListener listeners = new OrderedMouseListener();
 
+		EdgeTool<E> edgeTool = new EdgeTool<>(pane);
 		JMenuItem addEdge = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
-			EdgeTool<E> tool = new EdgeTool<>(pane);
-			tool.setSource(e.getContext().iterator().next());
+			edgeTool.setSource(e.getContext().iterator().next());
 
-			layers.add(tool.getOverlay(), 0);
+			layers.add(edgeTool.getOverlay(), 0);
 			layers.revalidate();
 			pane.repaint();
 
-			listeners.addListener(tool);
+			listeners.addListener(edgeTool);
 
-			tool.addToolListener(() -> {
-				layers.remove(tool.getOverlay());
-				listeners.removeListener(tool);
+			edgeTool.addToolListener(() -> {
+				layers.remove(edgeTool.getOverlay());
+				listeners.removeListener(edgeTool);
 				layers.revalidate();
 				layers.repaint();
 			});
 		});
 		addEdge.setText("Add edge");
 
+		MaxFlowTool<E> maxFlowTool = new MaxFlowTool<>(pane);
 		JMenuItem maxFlow = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
-			MaxFlowTool<E> tool = new MaxFlowTool<>(pane, e.getContext().iterator().next());
+			maxFlowTool.setSource(e.getContext().iterator().next());
 
-			listeners.addListener(tool);
+			listeners.addListener(maxFlowTool);
 
-			tool.addToolListener( () -> listeners.removeListener(tool) );
+			maxFlowTool.addToolListener( () -> listeners.removeListener(maxFlowTool) );
 		});
 		maxFlow.setText("Find max flow to");
 
