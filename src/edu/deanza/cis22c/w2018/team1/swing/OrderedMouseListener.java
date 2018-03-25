@@ -5,10 +5,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public class OrderedMouseListener implements MouseInputListener {
 	private LinkedList<Object> listeners;

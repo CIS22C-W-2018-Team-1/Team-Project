@@ -1,7 +1,6 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.w2018.team1.Graph;
-import edu.deanza.cis22c.w2018.team1.MaxFlow;
+import edu.deanza.cis22c.w2018.team1.structure.graph.maxflow.MaxFlow;
 
 import javax.swing.JOptionPane;
 import java.awt.event.MouseEvent;
@@ -13,7 +12,7 @@ import java.util.OptionalDouble;
 
 public class MaxFlowTool<E> implements MouseListener {
 	private GraphPanel<E> panel;
-	private Graph<E>.Vertex source;
+	private E source;
 	private List<ToolListener> listeners = new LinkedList<>();
 
 	public void addToolListener(ToolListener l) {
@@ -25,7 +24,7 @@ public class MaxFlowTool<E> implements MouseListener {
 	}
 
 
-	public MaxFlowTool(GraphPanel<E> panel, Graph<E>.Vertex source) {
+	public MaxFlowTool(GraphPanel<E> panel, E source) {
 		this.panel = panel;
 		this.source = source;
 	}
@@ -34,10 +33,10 @@ public class MaxFlowTool<E> implements MouseListener {
 	public void mouseClicked(MouseEvent e) {
 		if (e.getButton() != MouseEvent.BUTTON1) { return; }
 
-		Optional<Graph<E>.Vertex> vertex = panel.getVertexAt(e.getPoint());
+		Optional<E> vertex = panel.getVertexAt(e.getPoint());
 
 		vertex.ifPresent((vert) -> {
-			OptionalDouble maxFlow = MaxFlow.findMaximumFlow(panel.getGraph(), source.getId(), vert.getId());
+			OptionalDouble maxFlow = MaxFlow.findMaximumFlow(panel.getGraph(), source, vert);
 
 			if (maxFlow.isPresent()) {
 				double flow = maxFlow.getAsDouble();

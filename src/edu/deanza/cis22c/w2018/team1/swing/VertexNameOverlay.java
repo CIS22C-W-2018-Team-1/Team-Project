@@ -1,15 +1,12 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.Pair;
-import edu.deanza.cis22c.w2018.team1.Graph;
-import edu.deanza.cis22c.w2018.team1.Vector2;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
 
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-import java.util.Collection;
 
 public class VertexNameOverlay<E> extends JPanel {
 	private GraphPanel<E> graphPanel;
@@ -26,15 +23,18 @@ public class VertexNameOverlay<E> extends JPanel {
 
 		Graphics2D g2d = (Graphics2D) g;
 
-		graphPanel.getGraph().vertices().values().forEach( (vertex) ->
-			graphPanel.getVertexPosition(vertex.getId()).ifPresent( (p) -> {
-				Pair<Stroke, Color> style = graphPanel.getStyleFor(vertex);
+		graphPanel.getGraph().forEach(
+			vertex -> graphPanel.getVertexPosition(vertex).ifPresent(
+				p -> {
+					Pair<Stroke, Color> style = graphPanel.getStyleFor(vertex);
 
-				g2d.setStroke(style.getLeft());
-				g2d.setColor(style.getRight());
+					g2d.setStroke(style.getLeft());
+					g2d.setColor(style.getRight());
 
-				g2d.drawString(vertex.getId().toString(),
-						(int) (p.getX() + graphPanel.getVertexRadius() + 10), (int) p.getY());
-			}));
+					g2d.drawString(vertex.toString(),
+							(int) (p.getX() + graphPanel.getVertexRadius() + 10), (int) p.getY());
+				}
+			)
+		);
 	}
 }

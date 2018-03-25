@@ -1,6 +1,6 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
 
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;

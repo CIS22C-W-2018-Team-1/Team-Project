@@ -1,6 +1,6 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
 
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -31,14 +31,17 @@ public class VertexLevelOverlay<E> extends JPanel {
 
 		Graphics2D g2d = (Graphics2D) g;
 
-		graphPanel.getGraph().vertices().values().forEach( (vertex) ->
-			graphPanel.getVertexPosition(vertex.getId()).ifPresent( (p) -> {
-				Pair<Stroke, Color> style = graphPanel.getStyleFor(vertex);
+		graphPanel.getGraph().forEach(
+			vertex -> graphPanel.getVertexPosition(vertex).ifPresent(
+				p -> {
+					Pair<Stroke, Color> style = graphPanel.getStyleFor(vertex);
 
-				g2d.setStroke(style.getLeft());
-				g2d.setColor(style.getRight());
+					g2d.setStroke(style.getLeft());
+					g2d.setColor(style.getRight());
 
-				g2d.drawString(Objects.toString(levels.get(vertex.getId())), (int) p.getX(), (int) p.getY());
-			}));
+					g2d.drawString(Objects.toString(levels.get(vertex)), (int) p.getX(), (int) p.getY());
+				}
+			)
+		);
 	}
 }

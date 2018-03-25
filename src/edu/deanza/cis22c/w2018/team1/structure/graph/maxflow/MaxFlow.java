@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class MaxFlow<E> extends Graph<E> {
@@ -44,10 +45,39 @@ public class MaxFlow<E> extends Graph<E> {
 		return totalFlow;
 	}
 
+	public Map<E, Integer> getLastLevels() {
+		return stream().collect( Collectors.toMap(Function.identity(),
+		                                          e -> ((MaxFlowVertex<E>) addToVertexSet(e)).getLevel()) );
+	}
+
+	public Graph<E> getAccessibilityGraph() {
+		Graph<E> ret = new Graph<>();
+
+		breadthFirstTraversal(source.getData(),
+			(s) -> {
+				MaxFlowVertex<E> v = (MaxFlowVertex<E>) addToVertexSet(s);
+				addToVertexSet(s).getAdjList().forEach(
+					(d, e) -> {
+						if (((MaxFlowVertex<E>) e.getLeft()).getLevel() > v.getLevel())
+							ret.addEdgeOrUpdate(s, d, e.getRight());
+					});
+			});
+
+		return ret;
+	}
+
+	public Graph<E> getLastFlowGraph() {
+		return lastFlowGraph;
+	}
+
+	public Graph<E> getTotalFlowGraph() {
+		return totalFlowGraph;
+	}
+
 	/**
 	 * Computes the levels via a breadth first search
 	 */
-	private void computeLevels() {
+	public void computeLevels() {
 		unvisitVertices();
 		int level = 1;
 
@@ -191,8 +221,6 @@ public class MaxFlow<E> extends Graph<E> {
 	}
 
 	public void doIteration() {
-		computeLevels();
-
 		Optional<Pair<Double, Graph<E>>> oRes = computeBlockingFlow();
 
 		if (!oRes.isPresent()) {
@@ -262,6 +290,7 @@ public class MaxFlow<E> extends Graph<E> {
 		MaxFlow<E> maxFlow = new MaxFlow<>(graph, source, sink);
 
 		while (!maxFlow.isDone()) {
+			maxFlow.computeLevels();
 			maxFlow.doIteration();
 		}
 

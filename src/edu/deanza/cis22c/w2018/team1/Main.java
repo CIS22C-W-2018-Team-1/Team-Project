@@ -5,8 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import edu.deanza.cis22c.Pair;
-import edu.deanza.cis22c.w2018.team1.flowimpl.MaxFlow;
+import edu.deanza.cis22c.w2018.team1.serialization.GraphSerializer;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import edu.deanza.cis22c.w2018.team1.swing.ContextMenu;
 import edu.deanza.cis22c.w2018.team1.swing.EdgeTool;
 import edu.deanza.cis22c.w2018.team1.swing.EdgeWeightOverlay;
@@ -16,10 +17,8 @@ import edu.deanza.cis22c.w2018.team1.swing.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.MaxFlowVisualizeTool;
 import edu.deanza.cis22c.w2018.team1.swing.OrderedMouseListener;
 import edu.deanza.cis22c.w2018.team1.swing.PredicateDecorator;
-import edu.deanza.cis22c.w2018.team1.swing.VertexLevelOverlay;
 import edu.deanza.cis22c.w2018.team1.swing.VertexNameOverlay;
 
-import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -33,7 +32,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import java.awt.BasicStroke;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -49,13 +47,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -69,171 +62,6 @@ public class Main implements Runnable {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private static class FlowState<E> {
-		double extantFlow;
-		boolean capacitiesVisible;
-		Map<E, Integer> levels;
-		Graph<E> graph;
-		Graph<E> overlayGraph;
-		Color overlayColor;
-
-		public FlowState(double extantFlow, boolean capacitiesVisible, Map<E, Integer> levels,
-		                 Graph<E> graph, Graph<E> overlayGraph, Color overlayColor) {
-			this.extantFlow = extantFlow;
-			this.capacitiesVisible = capacitiesVisible;
-			this.levels = levels;
-			this.graph = graph;
-			this.overlayGraph = overlayGraph;
-			this.overlayColor = overlayColor;
-		}
-	}
-
-	private static class FlowHolder<E> {
-		private ListIterator<FlowState<E>> iterator;
-		boolean steppedForwardLast = true;
-
-		public FlowHolder(ListIterator<FlowState<E>> iterator) {
-			this.iterator = iterator;
-		}
-
-		public FlowState previous() {
-			FlowState<E> ret = iterator.previous();
-			if (steppedForwardLast) {
-				ret = iterator.previous();
-				steppedForwardLast = false;
-			}
-
-			return ret;
-		}
-
-		public boolean hasPrevious() {
-			return iterator.hasPrevious();
-		}
-
-		public FlowState next() {
-			FlowState<E> ret = iterator.next();
-			if (!steppedForwardLast) {
-				ret = iterator.next();
-				steppedForwardLast = true;
-			}
-
-			return ret;
-		}
-
-		public boolean hasNext() {
-			return iterator.hasNext();
-		}
-	}
-
-	public static <E> JFrame buildMaxFlowVisualizerFrame(Graph<E> graph, Map<E, Point2D> positionTable,
-	                                                     Graph<E>.Vertex source, Graph<E>.Vertex sink) {
-		MaxFlow<E> maxFlow = new MaxFlow<>(graph, source, sink);
-		LinkedList<FlowState<E>> stateList = new LinkedList<>();
-
-		Graph<E> emptyGraph = new Graph<>();
-		maxFlow.updateLevels();
-		stateList.add(new FlowState<>(0.0, true, maxFlow.getLastLevels(),
-				graph, emptyGraph, Color.RED));
-		Graph<E> accessibility = maxFlow.getAccessibilityGraph();
-		maxFlow.doIteration();
-		while (!maxFlow.isDone()) {
-			stateList.add(new FlowState<>(maxFlow.getTotalFlow(), true, maxFlow.getLastLevels(),
-					accessibility, emptyGraph, Color.RED));
-			stateList.add(new FlowState<>(maxFlow.getTotalFlow(), false, maxFlow.getLastLevels(),
-					accessibility, maxFlow.getLastFlowGraph(), Color.YELLOW));
-			stateList.add(new FlowState<>(maxFlow.getTotalFlow(), false, maxFlow.getLastLevels(),
-					accessibility, new Graph<>(maxFlow.getTotalFlowGraph()), Color.BLUE));
-
-			maxFlow.updateLevels();
-			accessibility = maxFlow.getAccessibilityGraph();
-			maxFlow.doIteration();
-		}
-
-		JPanel pane = new JPanel();
-		BorderLayout layout = new BorderLayout();
-		pane.setLayout(layout);
-
-		JPanel layers = new JPanel();
-		OverlayLayout overlayer = new OverlayLayout(layers);
-		layers.setLayout(overlayer);
-
-		GraphPanel<E> graphPanel = new GraphPanel<>(graph);
-		graphPanel.addPositionData(positionTable);
-		layers.add(graphPanel, 0);
-
-		GraphPanel<E> overlayPanel = new GraphPanel<>(stateList.getFirst().overlayGraph);
-		overlayPanel.addPositionData(positionTable);
-		overlayPanel.setOpaque(false);
-		layers.add(overlayPanel, 0);
-
-		VertexLevelOverlay<E> levelOverlay = new VertexLevelOverlay<>(graphPanel, stateList.getFirst().levels);
-		layers.add(levelOverlay, 0);
-		graphPanel.addRepaintListener(layers::repaint);
-
-		EdgeWeightOverlay<E> capacityOverlay = new EdgeWeightOverlay<>(graphPanel);
-		layers.add(capacityOverlay, 0);
-		overlayPanel.addRepaintListener(capacityOverlay::repaint);
-
-		EdgeWeightOverlay<E> flowOverlay = new EdgeWeightOverlay<>(overlayPanel);
-		layers.add(flowOverlay, 0);
-		overlayPanel.addRepaintListener(flowOverlay::repaint);
-
-		pane.add(layers, BorderLayout.CENTER);
-
-		ListIterator<FlowState<E>> stateIterator = stateList.listIterator();
-		stateIterator.next(); // Advance it by 1
-
-		FlowHolder<E> flow = new FlowHolder<>(stateIterator);
-
-		JPanel buttonBar = new JPanel();
-
-		JButton prev = new JButton("<-");
-		JButton next = new JButton("->");
-
-		prev.addActionListener((e) -> {
-			FlowState<E> currentState = flow.previous();
-
-			graphPanel.setGraph(currentState.graph);
-			overlayPanel.setGraph(currentState.overlayGraph);
-			capacityOverlay.setVisible(currentState.capacitiesVisible);
-			overlayPanel.setEdgeColor(currentState.overlayColor);
-			levelOverlay.setLevels(currentState.levels);
-
-			graphPanel.repaint();
-			overlayPanel.repaint();
-
-			prev.setEnabled(flow.hasPrevious());
-			next.setEnabled(flow.hasNext());
-		});
-		prev.setEnabled(false);
-		buttonBar.add(prev);
-
-		next.addActionListener((e) -> {
-			FlowState<E> currentState = flow.next();
-
-			graphPanel.setGraph(currentState.graph);
-			overlayPanel.setGraph(currentState.overlayGraph);
-			capacityOverlay.setVisible(currentState.capacitiesVisible);
-			overlayPanel.setEdgeColor(currentState.overlayColor);
-			levelOverlay.setLevels(currentState.levels);
-
-			graphPanel.repaint();
-			overlayPanel.repaint();
-
-			prev.setEnabled(flow.hasPrevious());
-			next.setEnabled(flow.hasNext());
-		});
-		buttonBar.add(next);
-
-		pane.add(buttonBar, BorderLayout.SOUTH);
-
-		JFrame ret = new JFrame();
-		ret.add(pane);
-		ret.pack();
-		ret.setSize(1280, 800);
-		return ret;
 	}
 
 	private static <E> JFrame buildGraphFrame(Supplier<E> vertIdSupplier, Type elemType) {
@@ -252,22 +80,23 @@ public class Main implements Runnable {
 		OverlayLayout layout = new OverlayLayout(layers);
 		layers.setLayout(layout);
 
-		ContextMenu<Set<Graph<E>.Vertex>> rightClickMenu = new ContextMenu<>();
+		ContextMenu<Set<E>> rightClickMenu = new ContextMenu<>();
 
 		GraphSelectionHandler<E> selector = new GraphSelectionHandler<>(pane);
 
-		rightClickMenu.setContextSupplier((p) -> selector.getSelection());
+		rightClickMenu.setContextSupplier(p -> selector.getSelection());
 
-		JMenuItem newNode = rightClickMenu.addMenuItem(Set::isEmpty, (e) -> {
-			Graph<E>.Vertex vertex = pane.getGraph().getOrCreateVertex(vertIdSupplier.get());
-			pane.setVertexPosition(vertex.getId(), e.getLocation());
+		JMenuItem newNode = rightClickMenu.addMenuItem(Set::isEmpty, e -> {
+			E vertex = vertIdSupplier.get();
+			pane.getGraph().addVertex(vertex);
+			pane.setVertexPosition(vertex, e.getLocation());
 			pane.repaint();
 		});
 		newNode.setText("New Node");
 
 		OrderedMouseListener listeners = new OrderedMouseListener();
 
-		JMenuItem addEdge = rightClickMenu.addMenuItem((s) -> s.size() == 1, (e) -> {
+		JMenuItem addEdge = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
 			EdgeTool<E> tool = new EdgeTool<>(pane);
 			tool.setSource(e.getContext().iterator().next());
 
@@ -286,32 +115,28 @@ public class Main implements Runnable {
 		});
 		addEdge.setText("Add edge");
 
-		JMenuItem maxFlow = rightClickMenu.addMenuItem((s) -> s.size() == 1, (e) -> {
+		JMenuItem maxFlow = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
 			MaxFlowTool<E> tool = new MaxFlowTool<>(pane, e.getContext().iterator().next());
 
 			listeners.addListener(tool);
 
-			tool.addToolListener(() -> {
-				listeners.removeListener(tool);
-			});
+			tool.addToolListener( () -> listeners.removeListener(tool) );
 		});
 		maxFlow.setText("Find max flow to");
 
-		JMenuItem vMaxFlow = rightClickMenu.addMenuItem((s) -> s.size() == 1, (e) -> {
+		JMenuItem vMaxFlow = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
 			MaxFlowVisualizeTool<E> tool = new MaxFlowVisualizeTool<>(frame, pane, e.getContext().iterator().next());
 
 			listeners.addListener(tool);
 
-			tool.addToolListener(() -> {
-				listeners.removeListener(tool);
-			});
+			tool.addToolListener( () -> listeners.removeListener(tool) );
 		});
 		vMaxFlow.setText("Visualize max flow");
 
-		JMenuItem delete = rightClickMenu.addMenuItem((s) -> !s.isEmpty(), (e) -> {
-			e.getContext().forEach(Graph.Vertex::remove);
+		JMenuItem delete = rightClickMenu.addMenuItem( s -> !s.isEmpty(), e -> {
+			e.getContext().forEach(pane.getGraph()::removeVertex);
 			pane.repaint();
-		});
+		} );
 		delete.setText("Delete");
 
 		listeners.addListener(rightClickMenu.getTriggerListener());
@@ -377,7 +202,7 @@ public class Main implements Runnable {
 		JFileChooser fileChooser = new JFileChooser();
 
 		JMenuItem open = new JMenuItem("Open");
-		open.addActionListener((e) -> {
+		open.addActionListener(e -> {
 			int ret = fileChooser.showOpenDialog(frame);
 
 			if (ret == JFileChooser.APPROVE_OPTION) {
@@ -387,7 +212,7 @@ public class Main implements Runnable {
 					pane.setGraph(data.getLeft());
 					pane.addPositionData(data.getRight());
 
-					pane.getGraph().vertices().values().stream().map(Graph.Vertex::getId).forEachOrdered((v) -> {
+					pane.getGraph().forEach(v -> {
 						if (!pane.getVertexPosition(v).isPresent()) {
 							pane.setVertexPosition(v, new Point2D.Double(0, 0));
 						}
@@ -400,7 +225,7 @@ public class Main implements Runnable {
 		file.add(open);
 
 		JMenuItem save = new JMenuItem("Save");
-		save.addActionListener((e) -> {
+		save.addActionListener(e -> {
 			int ret = fileChooser.showSaveDialog(frame);
 
 			if (ret == JFileChooser.APPROVE_OPTION) {
@@ -420,7 +245,7 @@ public class Main implements Runnable {
 		Runnable edgeWeightRepainter = edgeWeightOverlay::repaint;
 
 		JCheckBoxMenuItem edgeWeights = new JCheckBoxMenuItem("Edge weights");
-		edgeWeights.addActionListener((e) -> {
+		edgeWeights.addActionListener(e -> {
 			if (edgeWeights.getState()) {
 				layers.add(edgeWeightOverlay, 0);
 				pane.addRepaintListener(edgeWeightRepainter);
@@ -441,7 +266,7 @@ public class Main implements Runnable {
 		Runnable vertexNameRepainter = vertexNameOverlay::repaint;
 
 		JCheckBoxMenuItem vertexNames = new JCheckBoxMenuItem("Vertex names");
-		vertexNames.addActionListener((e) -> {
+		vertexNames.addActionListener(e -> {
 			if (vertexNames.getState()) {
 				layers.add(vertexNameOverlay, 0);
 				pane.addRepaintListener(vertexNameRepainter);

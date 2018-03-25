@@ -1,27 +1,22 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.w2018.team1.Graph;
 import edu.deanza.cis22c.w2018.team1.Vector2;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.event.MouseInputListener;
-import javax.tools.Tool;
-import java.awt.BasicStroke;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Polygon;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
 public class EdgeTool<E> implements MouseInputListener {
-	private Graph<E>.Vertex source;
+	private E source;
 	private GraphPanel<E> panel;
 	private Point mousePos;
 	private List<ToolListener> listeners = new LinkedList<>();
@@ -54,12 +49,11 @@ public class EdgeTool<E> implements MouseInputListener {
 
 			Graphics2D g2d = (Graphics2D) g;
 
-			Vector2 sourcePos = new Vector2(panel.getVertexPosition(source.getId()).get());
+			Vector2 sourcePos = new Vector2(panel.getVertexPosition(source).get());
 			Vector2 destPos;
 
 			Optional<Vector2> destVertPos = panel
 					.getVertexAt(mousePos)
-					.map(Graph.Vertex::getId)
 					.flatMap(panel::getVertexPosition)
 					.map(Vector2::new);
 
@@ -96,7 +90,7 @@ public class EdgeTool<E> implements MouseInputListener {
 		return edgeToolOverlay;
 	}
 
-	public void setSource(Graph<E>.Vertex source) {
+	public void setSource(E source) {
 		this.source = source;
 	}
 
@@ -110,7 +104,7 @@ public class EdgeTool<E> implements MouseInputListener {
 	public void mouseClicked(MouseEvent e) {
 		if (e.getButton() != MouseEvent.BUTTON1) { return; }
 
-		Optional<Graph<E>.Vertex> vertex = panel.getVertexAt(e.getPoint());
+		Optional<E> vertex = panel.getVertexAt(e.getPoint());
 
 		vertex.ifPresent((vert) -> {
 			if (source == null) {
@@ -120,7 +114,7 @@ public class EdgeTool<E> implements MouseInputListener {
 				String sWeight = JOptionPane.showInputDialog("Edge weight");
 				if (sWeight != null) {
 					Double weight = Double.valueOf(sWeight);
-					source.createOrUpdateEdgeTo(vert, weight);
+					panel.getGraph().addEdgeOrUpdate(source, vert, weight);
 
 					source = null;
 					edgeToolOverlay.repaint();

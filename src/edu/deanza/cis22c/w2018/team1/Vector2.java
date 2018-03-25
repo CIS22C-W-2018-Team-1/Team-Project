@@ -1,6 +1,6 @@
 package edu.deanza.cis22c.w2018.team1;
 
-import java.awt.*;
+import java.awt.Point;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.util.Objects;

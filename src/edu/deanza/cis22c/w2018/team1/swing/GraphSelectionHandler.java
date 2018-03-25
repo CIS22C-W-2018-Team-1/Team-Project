@@ -1,21 +1,10 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.Pair;
-import edu.deanza.cis22c.w2018.team1.Graph;
 import edu.deanza.cis22c.w2018.team1.Vector2;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
 
-import javax.swing.JComponent;
-import javax.swing.JPanel;
 import javax.swing.event.MouseInputListener;
-import javax.swing.plaf.LayerUI;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.Collections;
@@ -26,14 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public class GraphSelectionHandler<E> implements MouseInputListener {
-	private Set<Graph<E>.Vertex> selection = new HashSet<>();
+	private Set<E> selection = new HashSet<>();
 	private Rectangle2D selecting;
-	private Map<Graph<E>.Vertex, Point2D> posCache;
+	private Map<E, Point2D> posCache;
 	private Vector2 dragStart;
 
 	private GraphPanel<E> pane;
@@ -65,7 +52,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		}
 		System.out.println(e.getButton());
 
-		Optional<Graph<E>.Vertex> vertex = pane.getVertexAt(e.getPoint());
+		Optional<E> vertex = pane.getVertexAt(e.getPoint());
 
 		if (vertex.isPresent() && selection.contains(vertex.get())) {
 			selection.clear();
@@ -80,7 +67,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 			dragStart = new Vector2(e.getPoint());
 		}
 
-		Optional<Graph<E>.Vertex> vertex = pane.getVertexAt(e.getPoint());
+		Optional<E> vertex = pane.getVertexAt(e.getPoint());
 
 		if (!(vertex.isPresent() && selection.contains(vertex.get())) && !e.isShiftDown()) {
 			selection.clear();
@@ -94,7 +81,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 				posCache = new HashMap<>();
 
 				selection.forEach((vert) -> {
-					Optional<Point2D> oPos = pane.getVertexPosition(vert.getId());
+					Optional<Point2D> oPos = pane.getVertexPosition(vert);
 					oPos.ifPresent((pos) -> posCache.put(vert, pos));
 				});
 			}
@@ -118,9 +105,9 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		Vector2 mousePos = new Vector2(e.getPoint());
 		if (posCache != null) { // Nodes are being dragged
 			Vector2 dP = mousePos.minus(dragStart);
-			selection.forEach((vertex) ->
+			selection.forEach(vertex ->
 				Optional.of(posCache.get(vertex))
-				        .ifPresent((pos) -> pane.setVertexPosition(vertex.getId(), dP.plus(pos).asPoint()))
+				        .ifPresent(pos -> pane.setVertexPosition(vertex, dP.plus(pos).asPoint()))
 			);
 			pane.repaint();
 		} else {
@@ -138,10 +125,9 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 
 		if (selecting != null) {
 			pane.getPositionTable().entrySet().stream()
-					.filter((entry) -> selecting.contains(entry.getValue()))
+					.filter(entry -> selecting.contains(entry.getValue()))
 					.map(Map.Entry::getKey)
-					.map(pane.getGraph()::getVertex)
-					.forEachOrdered((o) -> o.ifPresent(selection::add));
+					.forEachOrdered(selection::add);
 
 			pane.repaint();
 			selecting = null;
@@ -150,11 +136,11 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		}
 	}
 
-	public Predicate<Pair<Graph<E>.Vertex, Point2D>> stylingPredicate() {
+	public Predicate<Pair<E, Point2D>> stylingPredicate() {
 		return (pair) -> selection.contains(pair.getLeft()) || selecting != null && selecting.contains(pair.getRight());
 	}
 
-	public Set<Graph<E>.Vertex> getSelection() {
+	public Set<E> getSelection() {
 		return Collections.unmodifiableSet(selection);
 	}
 

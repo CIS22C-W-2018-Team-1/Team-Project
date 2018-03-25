@@ -1,8 +1,8 @@
 package edu.deanza.cis22c.w2018.team1.swing;
 
-import edu.deanza.cis22c.Pair;
-import edu.deanza.cis22c.w2018.team1.Graph;
 import edu.deanza.cis22c.w2018.team1.Vector2;
+import edu.deanza.cis22c.w2018.team1.structure.Pair;
+import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -24,14 +24,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.HashMap;
 import java.util.function.Function;
 
 public class GraphPanel<E> extends JPanel {
 	private Graph<E> graph;
 	private HashMap<E, Point2D> positionTable;
-	private List<Function<Pair<Graph<E>.Vertex, Point2D>, Optional<Pair<Stroke, Color>>>> vertexDecorators = new LinkedList<>();
-	private List<Function<Graph<E>.Edge, Optional<Pair<Stroke, Color>>>> edgeDecorators = new LinkedList<>();
+	private List<Function<Pair<E, Point2D>, Optional<Pair<Stroke, Color>>>> vertexDecorators = new LinkedList<>();
+	private List<Function<Pair<E, E>, Optional<Pair<Stroke, Color>>>> edgeDecorators = new LinkedList<>();
 	private double vertexRadius = 25;
 
 	private List<Runnable> repaintListeners = new LinkedList<>();
@@ -128,15 +127,15 @@ public class GraphPanel<E> extends JPanel {
 		return Optional.ofNullable(positionTable.get(vertex));
 	}
 
-	public Optional<Graph<E>.Vertex> getVertexAt(Point2D point) {
+	public Optional<E> getVertexAt(Point2D point) {
 		return getVertexNear(point, vertexRadius);
 	}
 
-	public Optional<Graph<E>.Vertex> getVertexNear(Point2D point, double epsilon) {
+	public Optional<E> getVertexNear(Point2D point, double epsilon) {
 		// TODO: Replace with some form of spacial partitioning for efficiency reasons
 		for (Map.Entry<E, Point2D> entry: positionTable.entrySet()) {
 			if (new Vector2(point).minus(entry.getValue()).magnitude() < epsilon) {
-				return graph.getVertex(entry.getKey());
+				return Optional.of(entry.getKey());
 			}
 		}
 
@@ -187,27 +186,27 @@ public class GraphPanel<E> extends JPanel {
 		return edgeStyle.getRight();
 	}
 
-	public void addVertexDecorator(Function<Pair<Graph<E>.Vertex, Point2D>, Optional<Pair<Stroke, Color>>> decorator) {
+	public void addVertexDecorator(Function<Pair<E, Point2D>, Optional<Pair<Stroke, Color>>> decorator) {
 		this.vertexDecorators.add(0, decorator);
 	}
 
-	public boolean removeVertexDecorator(Function<Pair<Graph<E>.Vertex, Point2D>, Optional<Pair<Stroke, Color>>> decorator) {
+	public boolean removeVertexDecorator(Function<Pair<E, Point2D>, Optional<Pair<Stroke, Color>>> decorator) {
 		return this.vertexDecorators.remove(decorator);
 	}
 
-	public Function<Pair<Graph<E>.Vertex, Point2D>, Optional<Pair<Stroke, Color>>> removeVertexDecorator(int i) {
+	public Function<Pair<E, Point2D>, Optional<Pair<Stroke, Color>>> removeVertexDecorator(int i) {
 		return this.vertexDecorators.remove(i);
 	}
 
-	public void addEdgeDecorator(Function<Graph<E>.Edge, Optional<Pair<Stroke, Color>>> decorator) {
+	public void addEdgeDecorator(Function<Pair<E, E>, Optional<Pair<Stroke, Color>>> decorator) {
 		this.edgeDecorators.add(0, decorator);
 	}
 
-	public boolean removeEdgeDecorator(Function<Graph<E>.Edge, Optional<Pair<Stroke, Color>>> decorator) {
+	public boolean removeEdgeDecorator(Function<Pair<E, E>, Optional<Pair<Stroke, Color>>> decorator) {
 		return this.edgeDecorators.remove(decorator);
 	}
 
-	public Function<Graph<E>.Edge, Optional<Pair<Stroke, Color>>> removeEdgeDecorator(int i) {
+	public Function<Pair<E, E>, Optional<Pair<Stroke, Color>>> removeEdgeDecorator(int i) {
 		return this.edgeDecorators.remove(i);
 	}
 
@@ -229,17 +228,17 @@ public class GraphPanel<E> extends JPanel {
 		return defaultStyle;
 	}
 
-	public Pair<Stroke, Color> getStyleFor(Graph<E>.Vertex vertex) {
-		return decoratorLadder(vertexDecorators, vertexStyle, new Pair<>(vertex, positionTable.get(vertex.getId())));
+	public Pair<Stroke, Color> getStyleFor(E vertex) {
+		return decoratorLadder(vertexDecorators, vertexStyle, new Pair<>(vertex, positionTable.get(vertex)));
 	}
 
-	public Pair<Stroke, Color> getStyleFor(Graph<E>.Edge edge) {
+	public Pair<Stroke, Color> getStyleFor(Pair<E, E> edge) {
 		return decoratorLadder(edgeDecorators, edgeStyle, edge);
 	}
 
-	public Optional<Line2D> getEdgeLine(Graph<E>.Edge edge) {
-		return Optional.ofNullable(positionTable.get(edge.getSource().getId())).map(Vector2::new).flatMap((sourcePos) ->
-			Optional.ofNullable(positionTable.get(edge.getDestination().getId())).map(Vector2::new).map((destPos) -> {
+	public Optional<Line2D> getEdgeLine(Pair<E, E> edge) {
+		return Optional.ofNullable(positionTable.get(edge.getLeft())).map(Vector2::new).flatMap((sourcePos) ->
+			Optional.ofNullable(positionTable.get(edge.getRight())).map(Vector2::new).map((destPos) -> {
 				Vector2 offset = destPos.minus(sourcePos).normalized().times(vertexRadius);
 
 				return new Line2D.Double(sourcePos.plus(offset).asPoint(), destPos.minus(offset).asPoint());
@@ -265,13 +264,14 @@ public class GraphPanel<E> extends JPanel {
 
 		AffineTransform clearTx = g2d.getTransform();
 
-		for (Graph<E>.Vertex vertex: graph.vertices().values()) {
-			Point2D vertexPos = positionTable.get(vertex.getId());
+		for (E vertex: graph) {
+			Point2D vertexPos = positionTable.get(vertex);
 
 			if (vertexPos == null) { continue; }
 
 			AffineTransform tx = new AffineTransform();
-			for (Graph<E>.Edge edge: vertex.outgoingEdges()) {
+			for (E dest: graph.getDirectSuccessors(vertex).get()) {
+				Pair<E, E> edge = new Pair<>(vertex, dest);
 				getEdgeLine(edge).ifPresent((edgeLine) -> {
 					if (!clipBound.intersectsLine(edgeLine)) {
 						return;
@@ -298,8 +298,8 @@ public class GraphPanel<E> extends JPanel {
 			}
 		}
 
-		for (Graph<E>.Vertex vertex: graph.vertices().values()) {
-			Point2D p = positionTable.get(vertex.getId());
+		for (E vertex: graph) {
+			Point2D p = positionTable.get(vertex);
 
 			if (p == null || !clipBound.contains(p)) {
 				continue;
