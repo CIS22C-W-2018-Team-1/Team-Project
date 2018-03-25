@@ -25,6 +25,11 @@ public class Pair<L, R> {
 		return Objects.hash(left, right);
 	}
 
+	@Override
+	public String toString() {
+		return "Pair(" + left + ", " + right + ')';
+	}
+
 	public L getLeft() {
 		return left;
 	}

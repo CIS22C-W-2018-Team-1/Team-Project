@@ -32,6 +32,11 @@ public class Vertex<E> {
 
 	public void unvisit() { visited = false; }
 
+	@Override
+	public String toString() {
+		return "Vertex[" + data + ']';
+	}
+
 	/**
 	 * Gets the vertex's adjacency list in the form of a map
 	 *
