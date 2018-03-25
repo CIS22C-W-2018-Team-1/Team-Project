@@ -48,6 +48,7 @@ public class MaxFlow<E> extends Graph<E> {
 	 * Computes the levels via a breadth first search
 	 */
 	private void computeLevels() {
+		unvisitVertices();
 		int level = 1;
 
 		List<Vertex<E>> currentLevel = Collections.singletonList(source);
