@@ -94,11 +94,83 @@ public class Main implements Runnable {
 		OverlayLayout layout = new OverlayLayout(layers);
 		layers.setLayout(layout);
 
-		ContextMenu<Set<E>> rightClickMenu = new ContextMenu<>();
-
 		UndoHistory history = new UndoHistory();
 
 		GraphSelectionHandler<E> selector = new GraphSelectionHandler<>(pane, history);
+
+		OrderedMouseListener listeners = new OrderedMouseListener();
+
+		ContextMenu<Set<E>> rightClickMenu
+				= buildRClickMenu(frame, vertIdSupplier, listeners, selector, pane, layers, history);
+
+		listeners.addListener(rightClickMenu.getTriggerListener());
+		listeners.addListener(selector);
+		pane.addMouseListener(listeners);
+		pane.addMouseMotionListener(listeners);
+
+		pane.addVertexDecorator(new PredicateDecorator<>(selector.stylingPredicate(), new Pair<>(new BasicStroke(5), Color.BLUE)));
+
+		layers.add(pane);
+
+		selector.addBoxListener(new GraphSelectionHandler.SelectionBoxListener() {
+			private JPanel pane;
+			private Rectangle2D rect;
+
+			@Override
+			public void selectionStarted() {
+				pane = new JPanel() {
+					@Override
+					public void paintComponent(Graphics g) {
+						super.paintComponent(g);
+
+						if (rect == null) { return; }
+
+						Graphics2D g2d = (Graphics2D) g;
+						g2d.setStroke(new BasicStroke(3));
+						g2d.setColor(Color.BLUE);
+
+						g2d.draw(rect);
+					}
+				};
+				pane.setOpaque(false);
+				layers.add(pane, 0);
+				layers.revalidate();
+				layers.repaint();
+			}
+
+			@Override
+			public void selectionChanged(Rectangle2D rect) {
+				if (this.rect != null) {
+					pane.repaint(this.rect.getBounds());
+				} else {
+					pane.repaint(rect.getBounds());
+				}
+				this.rect = rect;
+			}
+
+			@Override
+			public void selectionEnded() {
+				layers.remove(pane);
+				layers.revalidate();
+				layers.repaint();
+				pane = null;
+				rect = null;
+			}
+		});
+
+		frame.setContentPane(layers);
+
+		frame.setJMenuBar(buildMenuBar(frame, pane, history, layers, elemType));
+
+		return frame;
+	}
+
+	private static <E> ContextMenu<Set<E>> buildRClickMenu(JFrame frame, Supplier<E> vertIdSupplier,
+	                                                       OrderedMouseListener listeners,
+	                                                       GraphSelectionHandler<E> selector,
+	                                                       GraphPanel<E> pane, JPanel layers,
+	                                                       UndoHistory history) {
+		ContextMenu<Set<E>> rightClickMenu = new ContextMenu<>();
 
 		rightClickMenu.setContextSupplier(p -> selector.getSelection());
 
@@ -119,8 +191,6 @@ public class Main implements Runnable {
 			pane.repaint();
 		});
 		newNode.setText("New Node");
-
-		OrderedMouseListener listeners = new OrderedMouseListener();
 
 		EdgeTool<E> edgeTool = new EdgeTool<>(pane, history);
 		JMenuItem addEdge = rightClickMenu.addMenuItem(s -> s.size() == 1, e -> {
@@ -200,66 +270,7 @@ public class Main implements Runnable {
 		});
 		deleteEdges.setText("Break connecting edges");
 
-		listeners.addListener(rightClickMenu.getTriggerListener());
-		listeners.addListener(selector);
-		pane.addMouseListener(listeners);
-		pane.addMouseMotionListener(listeners);
-
-		pane.addVertexDecorator(new PredicateDecorator<>(selector.stylingPredicate(), new Pair<>(new BasicStroke(5), Color.BLUE)));
-
-		layers.add(pane);
-
-		selector.addBoxListener(new GraphSelectionHandler.SelectionBoxListener() {
-			private JPanel pane;
-			private Rectangle2D rect;
-
-			@Override
-			public void selectionStarted() {
-				pane = new JPanel() {
-					@Override
-					public void paintComponent(Graphics g) {
-						super.paintComponent(g);
-
-						if (rect == null) { return; }
-
-						Graphics2D g2d = (Graphics2D) g;
-						g2d.setStroke(new BasicStroke(3));
-						g2d.setColor(Color.BLUE);
-
-						g2d.draw(rect);
-					}
-				};
-				pane.setOpaque(false);
-				layers.add(pane, 0);
-				layers.revalidate();
-				layers.repaint();
-			}
-
-			@Override
-			public void selectionChanged(Rectangle2D rect) {
-				if (this.rect != null) {
-					pane.repaint(this.rect.getBounds());
-				} else {
-					pane.repaint(rect.getBounds());
-				}
-				this.rect = rect;
-			}
-
-			@Override
-			public void selectionEnded() {
-				layers.remove(pane);
-				layers.revalidate();
-				layers.repaint();
-				pane = null;
-				rect = null;
-			}
-		});
-
-		frame.setContentPane(layers);
-
-		frame.setJMenuBar(buildMenuBar(frame, pane, history, layers, elemType));
-
-		return frame;
+		return rightClickMenu;
 	}
 
 	private static <E> JMenuBar buildMenuBar(JFrame frame, GraphPanel<E> pane, UndoHistory history,
