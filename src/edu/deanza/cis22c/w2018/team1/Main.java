@@ -9,6 +9,7 @@ import edu.deanza.cis22c.w2018.team1.serialization.GraphSerializer;
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
 import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import edu.deanza.cis22c.w2018.team1.swing.ContextMenu;
+import edu.deanza.cis22c.w2018.team1.swing.FileHandler;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 import edu.deanza.cis22c.w2018.team1.swing.GraphSelectionHandler;
 import edu.deanza.cis22c.w2018.team1.swing.PredicateDecorator;
@@ -17,15 +18,14 @@ import edu.deanza.cis22c.w2018.team1.swing.overlay.VertexNameOverlay;
 import edu.deanza.cis22c.w2018.team1.swing.tool.EdgeTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowVisualizeTool;
-import edu.deanza.cis22c.w2018.team1.swing.util.ContextActionEvent;
-import edu.deanza.cis22c.w2018.team1.swing.util.OrderedMouseListener;
 import edu.deanza.cis22c.w2018.team1.swing.undo.UndoHistory;
 import edu.deanza.cis22c.w2018.team1.swing.undo.UndoItem;
+import edu.deanza.cis22c.w2018.team1.swing.util.ContextActionEvent;
+import edu.deanza.cis22c.w2018.team1.swing.util.OrderedMouseListener;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -52,15 +52,15 @@ import java.awt.geom.Rectangle2D;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -298,46 +298,58 @@ public class Main implements Runnable {
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu file = new JMenu("File");
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setFileFilter(new FileNameExtensionFilter("JSON file", "json"));
 
-		JMenuItem open = new JMenuItem("Open");
-		open.addActionListener(e -> {
-			int ret = fileChooser.showOpenDialog(frame);
+		FileHandler<Pair<Graph<E>, Map<E, Point2D>>> fileHandler
+				= new FileHandler<>(frame, new FileNameExtensionFilter("JSON file", "json"),
+				() -> new Pair<>(new Graph<>(), new HashMap<>()),
+				f -> readFile(f, elemType),
+				(f, p) -> writeToFile(f, p.getLeft(), p.getRight(), elemType));
 
-			if (ret == JFileChooser.APPROVE_OPTION) {
-				File in = fileChooser.getSelectedFile();
-				try (BufferedReader reader = new BufferedReader(new FileReader(in))) {
-					Pair<Graph<E>, Map<E, Point2D>> data = readFile(reader, elemType);
-					pane.setGraph(data.getLeft());
-					pane.addPositionData(data.getRight());
-
-					pane.getGraph().forEach(v -> {
-						if (!pane.getVertexPosition(v).isPresent()) {
-							pane.setVertexPosition(v, new Point2D.Double(0, 0));
-						}
-					});
-
-					pane.repaint();
-
-					history.clear();
-				} catch (IOException ex) {} // Do nothing if the file's not found
+		history.addListener((e) -> {
+			if (e != UndoHistory.UndoEvent.HISTORY_CLEARED) {
+				fileHandler.notifyOfUnsavedChanges();
 			}
 		});
+
+		JMenuItem newFile = new JMenuItem("New");
+		newFile.addActionListener(e ->
+				fileHandler.newFile( () -> new Pair<>(pane.getGraph(), pane.getPositionTable()) )
+				.ifPresent(pair -> {
+					pane.setGraph(pair.getLeft());
+					pane.addPositionData(pair.getRight());
+					pane.repaint();
+					history.clear();
+				}));
+		newFile.setAccelerator(KeyStroke.getKeyStroke('N',
+				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
+		file.add(newFile);
+
+		JMenuItem open = new JMenuItem("Open");
+		open.addActionListener(e ->
+				fileHandler.open( () -> new Pair<>(pane.getGraph(), pane.getPositionTable()) )
+					.ifPresent(pair -> {
+						pane.setGraph(pair.getLeft());
+						pane.addPositionData(pair.getRight());
+						pane.repaint();
+						history.clear();
+					}));
+		open.setAccelerator(KeyStroke.getKeyStroke('O',
+				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
 		file.add(open);
 
 		JMenuItem save = new JMenuItem("Save");
-		save.addActionListener(e -> {
-			int ret = fileChooser.showSaveDialog(frame);
-
-			if (ret == JFileChooser.APPROVE_OPTION) {
-				File in = fileChooser.getSelectedFile();
-				try (BufferedWriter writer = new BufferedWriter(new FileWriter(in))) {
-					writeToFile(pane.getGraph(), writer, pane.getPositionTable(), elemType);
-				} catch (IOException ex) {} // Do nothing if the file's not found
-			}
-		});
+		save.addActionListener(e ->
+				fileHandler.save(new Pair<>(pane.getGraph(), pane.getPositionTable())));
+		save.setAccelerator(KeyStroke.getKeyStroke('S',
+				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
 		file.add(save);
+
+		JMenuItem saveAs = new JMenuItem("Save As...");
+		saveAs.addActionListener(e ->
+				fileHandler.saveAs(new Pair<>(pane.getGraph(), pane.getPositionTable())));
+		saveAs.setAccelerator(KeyStroke.getKeyStroke('S',
+				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask() | InputEvent.SHIFT_DOWN_MASK));
+		file.add(saveAs);
 
 		menuBar.add(file);
 
@@ -346,7 +358,8 @@ public class Main implements Runnable {
 		JMenuItem undo = new JMenuItem("Undo");
 		undo.addActionListener(e -> history.undo());
 		undo.setEnabled(false);
-		undo.setAccelerator(KeyStroke.getKeyStroke('Z', Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
+		undo.setAccelerator(KeyStroke.getKeyStroke('Z',
+				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
 		edit.add(undo);
 
 		history.addListener(e -> undo.setEnabled(history.canUndo()));
@@ -414,71 +427,84 @@ public class Main implements Runnable {
 		gson = gBuilder.create();
 	}
 
-	private static <E> Pair<Graph<E>, Map<E, Point2D>> readFile(Reader s, Type elemType) {
-		Type graphType = new ParameterizedType() {
-			@Override
-			public Type[] getActualTypeArguments() {
-				return new Type[]{elemType};
-			}
+	private static <E> Optional<Pair<Graph<E>, Map<E, Point2D>>> readFile(File f, Type elemType) {
+		try (BufferedReader s = new BufferedReader(new FileReader(f))) {
+			Type graphType = new ParameterizedType() {
+				@Override
+				public Type[] getActualTypeArguments() {
+					return new Type[]{elemType};
+				}
 
-			@Override
-			public Type getRawType() {
-				return Graph.class;
-			}
+				@Override
+				public Type getRawType() {
+					return Graph.class;
+				}
 
-			@Override
-			public Type getOwnerType() {
-				return null;
-			}
-		};
+				@Override
+				public Type getOwnerType() {
+					return null;
+				}
+			};
 
-		JsonParser parser = new JsonParser();
-		JsonObject obj = parser.parse(s).getAsJsonObject();
+			JsonParser parser = new JsonParser();
+			JsonObject obj = parser.parse(s).getAsJsonObject();
 
-		Graph<E> graph = gson.fromJson(obj, graphType);
-		Map<E, Point2D> knownPositions = new HashMap<>();
-		JsonArray vertices = obj.getAsJsonArray("vertices");
+			Graph<E> graph = gson.fromJson(obj, graphType);
+			Map<E, Point2D> knownPositions = new HashMap<>();
+			JsonArray vertices = obj.getAsJsonArray("vertices");
 
-		vertices.forEach((eVert) -> {
-			JsonObject oVert = eVert.getAsJsonObject();
-			Point2D.Double p = gson.fromJson(oVert.get("coordinates"), Point2D.Double.class);
-			if (p != null) {
-				E id = gson.fromJson(oVert.get("id"), elemType);
-				knownPositions.put(id, p);
-			}
-		});
+			vertices.forEach((eVert) -> {
+				JsonObject oVert = eVert.getAsJsonObject();
+				Point2D.Double p = gson.fromJson(oVert.get("coordinates"), Point2D.Double.class);
+				if (p != null) {
+					E id = gson.fromJson(oVert.get("id"), elemType);
+					knownPositions.put(id, p);
+				}
+			});
 
-		return new Pair<>(graph, knownPositions);
+			return Optional.of(new Pair<>(graph, knownPositions));
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException(e); // Should never happen, since we're reading from a file picker
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, e.getMessage(), "IOException",
+					JOptionPane.ERROR_MESSAGE);
+		}
+		return Optional.empty();
 	}
 
-	private static <E> void writeToFile(Graph<E> g, Writer s, Map<E, Point2D> posMap, Type elemType) {
-		Type graphType = new ParameterizedType() {
-			@Override
-			public Type[] getActualTypeArguments() {
-				return new Type[]{elemType};
-			}
+	private static <E> void writeToFile(File f, Graph<E> g, Map<E, Point2D> posMap, Type elemType) {
+		try (BufferedWriter s = new BufferedWriter(new FileWriter(f))) {
+			Type graphType = new ParameterizedType() {
+				@Override
+				public Type[] getActualTypeArguments() {
+					return new Type[]{elemType};
+				}
 
-			@Override
-			public Type getRawType() {
-				return Graph.class;
-			}
+				@Override
+				public Type getRawType() {
+					return Graph.class;
+				}
 
-			@Override
-			public Type getOwnerType() {
-				return null;
-			}
-		};
+				@Override
+				public Type getOwnerType() {
+					return null;
+				}
+			};
 
-		JsonObject obj = gson.toJsonTree(g, graphType).getAsJsonObject();
-		JsonArray vertices = obj.getAsJsonArray("vertices");
+			JsonObject obj = gson.toJsonTree(g, graphType).getAsJsonObject();
+			JsonArray vertices = obj.getAsJsonArray("vertices");
 
-		vertices.forEach((eVert) -> {
-			JsonObject oVert = eVert.getAsJsonObject();
-			Point2D pos = posMap.get(gson.fromJson(oVert.get("id"), elemType));
-			oVert.add("coordinates", gson.toJsonTree(pos));
-		});
+			vertices.forEach((eVert) -> {
+				JsonObject oVert = eVert.getAsJsonObject();
+				Point2D pos = posMap.get(gson.fromJson(oVert.get("id"), elemType));
+				oVert.add("coordinates", gson.toJsonTree(pos));
+			});
 
-		gson.toJson(obj, s);
+			gson.toJson(obj, s);
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, e.getMessage(), "IOException",
+					JOptionPane.ERROR_MESSAGE);
+		}
 	}
 
 	@Override
