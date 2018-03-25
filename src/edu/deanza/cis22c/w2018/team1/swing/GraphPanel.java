@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
@@ -243,6 +244,16 @@ public class GraphPanel<E> extends JPanel {
 
 				return new Line2D.Double(sourcePos.plus(offset).asPoint(), destPos.minus(offset).asPoint());
 			}));
+	}
+
+	@Override
+	public Dimension getPreferredSize() {
+		Point2D largestPos = positionTable.values().stream()
+				.reduce(new Point2D.Double(500, 500),
+						(l, r) -> new Point2D.Double(Math.max(l.getX(), r.getX()), Math.max(l.getY(), r.getY())));
+
+		return new Dimension((int) (largestPos.getX() + vertexRadius),
+		                     (int) (largestPos.getY() + vertexRadius));
 	}
 
 	@Override

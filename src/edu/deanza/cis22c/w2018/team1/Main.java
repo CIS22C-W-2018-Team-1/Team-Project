@@ -33,6 +33,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.KeyStroke;
 import javax.swing.OverlayLayout;
 import javax.swing.SwingUtilities;
@@ -165,7 +166,9 @@ public class Main implements Runnable {
 			}
 		});
 
-		frame.setContentPane(layers);
+		JScrollPane scroll = new JScrollPane(layers);
+
+		frame.setContentPane(scroll);
 
 		frame.setJMenuBar(buildMenuBar(frame, pane, history, layers, elemType));
 
