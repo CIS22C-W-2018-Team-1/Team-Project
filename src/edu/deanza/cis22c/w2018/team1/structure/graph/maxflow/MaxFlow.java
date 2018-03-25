@@ -30,9 +30,7 @@ public class MaxFlow<E> extends Graph<E> {
 	private MaxFlow() {}
 
 	public MaxFlow(Graph<E> graph, E source, E dest) {
-		graph.getVertexSet().values().forEach(
-				v -> v.getAdjList().values().forEach(
-						p -> addEdgeOrUpdate(v.getData(), p.getLeft().getData(), p.getRight())));
+		this.addSubgraph(graph, (l, r) -> r);
 
 		this.source = (MaxFlowVertex<E>) addToVertexSet(source);
 		this.dest   = (MaxFlowVertex<E>) addToVertexSet(dest);
@@ -77,7 +75,7 @@ public class MaxFlow<E> extends Graph<E> {
 	 *
 	 * @return   the flow
 	 */
-	private Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> computeGreedyAugmentingFlow() {
+	private Optional<Pair<Double, List<Pair<E, E>>>> computeGreedyAugmentingFlow() {
 		unvisitVertices();
 		source.visit();
 
@@ -115,7 +113,7 @@ public class MaxFlow<E> extends Graph<E> {
 
 		if (currentVertex == null) { return Optional.empty(); }
 
-		LinkedList<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>> ret = new LinkedList<>();
+		LinkedList<Pair<E, E>> ret = new LinkedList<>();
 
 		// Invert the edges in the path to allow for backtracking later
 		while (currentVertex != source) {
@@ -134,7 +132,7 @@ public class MaxFlow<E> extends Graph<E> {
 
 			currentVertex.addToAdjListOrUpdate(prevVertex, totalFlowThroughEdge);
 
-			ret.addFirst(new Pair<>(prevVertex, currentVertex));
+			ret.addFirst(new Pair<>(prevVertex.getData(), currentVertex.getData()));
 
 			currentVertex = prevVertex;
 		}
@@ -153,41 +151,37 @@ public class MaxFlow<E> extends Graph<E> {
 		// Most of this is just exactly the same as what's in the loop, with some initialization
 		// code added.
 
-		Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> oFirstFlow
+		Optional<Pair<Double, List<Pair<E, E>>>> oFirstFlow
 				= computeGreedyAugmentingFlow();
 
 		if (!oFirstFlow.isPresent()) { return Optional.empty(); }
 
-		Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>> firstFlow = oFirstFlow.get();
+		Pair<Double, List<Pair<E, E>>> firstFlow = oFirstFlow.get();
 
 		double extantFlow = firstFlow.getLeft();
 
 		final double dFirstFlow = extantFlow;
 		Graph<E> flowGraph = new Graph<>();
 		firstFlow.getRight().forEach(
-				edge -> flowGraph.addEdgeOrUpdate(edge.getLeft().getData(), edge.getRight().getData(), dFirstFlow));
+				edge -> flowGraph.addEdgeOrUpdate(edge.getLeft(), edge.getRight(), dFirstFlow));
 
 
-		Optional<Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>>> oNextFlow
+		Optional<Pair<Double, List<Pair<E, E>>>> oNextFlow
 				= computeGreedyAugmentingFlow();
 		while (oNextFlow.isPresent()) {
-			Pair<Double, List<Pair<MaxFlowVertex<E>, MaxFlowVertex<E>>>> nextFlow = oNextFlow.get();
+			Pair<Double, List<Pair<E, E>>> nextFlow = oNextFlow.get();
 
 			extantFlow += nextFlow.getLeft();
 
 			// the following is entirely unnecessary except for visualization purposes
-			nextFlow.getRight().forEach((edge) -> {
-				Vertex<E> flowSource, flowDestination;
-				flowSource      = flowGraph.addToVertexSet(edge.getLeft().getData());
-				flowDestination = flowGraph.addToVertexSet(edge.getRight().getData());
+			nextFlow.getRight().forEach(
+				edge -> {
+					E source = edge.getLeft();
+					E dest   = edge.getRight();
 
-				OptionalDouble oldFlow = flowSource.getCostTo(flowDestination);
-				if (oldFlow.isPresent()) {
-					flowSource.addToAdjListOrUpdate(flowDestination, oldFlow.getAsDouble() + nextFlow.getLeft());
-				} else {
-					flowSource.addToAdjListOrUpdate(flowDestination, nextFlow.getLeft());
-				}
-			});
+					double oldFlow = flowGraph.getEdgeCost(source, dest).orElse(0.0);
+					flowGraph.addEdgeOrUpdate(source, dest, oldFlow + nextFlow.getLeft());
+				});
 			// end unnecessary stuff
 
 			oNextFlow = computeGreedyAugmentingFlow();
@@ -211,28 +205,8 @@ public class MaxFlow<E> extends Graph<E> {
 
 		lastFlowGraph = res.getRight();
 
-		addGraphTo(lastFlowGraph, totalFlowGraph);
+		totalFlowGraph.addSubgraph(lastFlowGraph, Double::sum);
 		canonicalizeGraph(totalFlowGraph);
-	}
-
-	/**
-	 * Adds all the edges in one graph to another,
-	 * summing capacities as necessary
- 	 */
-	private static <E> void addGraphTo(Graph<E> addend, Graph<E> augend) {
-		addend.getVertexSet().values().forEach(
-				vertex -> vertex.getAdjList().values().forEach(
-						edge -> {
-							Vertex<E> source = augend.addToVertexSet(vertex.getData());
-							Vertex<E> dest   = augend.addToVertexSet(edge.getLeft().getData());
-
-							OptionalDouble oldCost = source.getCostTo(dest);
-							if (oldCost.isPresent()) {
-								source.addToAdjListOrUpdate(dest, oldCost.getAsDouble() + edge.getRight());
-							} else {
-								source.addToAdjListOrUpdate(dest, edge.getRight());
-							}
-						}));
 	}
 
 	/**
@@ -241,18 +215,21 @@ public class MaxFlow<E> extends Graph<E> {
 	 * one is subtracted from the opposite greater one and removed.
 	 */
 	private static <E> void canonicalizeGraph(Graph<E> g) {
-		g.getVertexSet().values().forEach(
-				source -> source.getAdjList().values().forEach(
-						edge -> edge.getLeft().getCostTo(source).ifPresent(
-								(oppEdgeWeight) -> {
-									double edgeWeight = edge.getRight();
-									if (edgeWeight < oppEdgeWeight) {
-										edge.getLeft().addToAdjListOrUpdate(source, oppEdgeWeight - edgeWeight);
-									} else if (edgeWeight == oppEdgeWeight) {
-										edge.setRight(0.0);
-										edge.getLeft().addToAdjListOrUpdate(source, oppEdgeWeight - edgeWeight);
-									}
-								})));
+		g.forEach(
+			source -> g.getDirectSuccessors(source).get().forEach(
+				dest -> g.getEdgeCost(source, dest).ifPresent(
+					capacity -> g.getEdgeCost(dest, source).ifPresent(
+						oppCapacity -> {
+							if (capacity < oppCapacity) {
+								// Have to set edges to 0 before removing them later
+								// to avoid invalidating the iterator
+								g.addEdgeOrUpdate(source, dest, 0.0);
+								g.addEdgeOrUpdate(dest, source, oppCapacity - capacity);
+							} else if (capacity == oppCapacity) {
+								g.addEdgeOrUpdate(source, dest, 0.0);
+								g.addEdgeOrUpdate(dest, source, 0.0);
+							}
+						}))));
 
 		trimGraph(g);
 	}
@@ -261,13 +238,15 @@ public class MaxFlow<E> extends Graph<E> {
 	 * Removes any edges with capacity 0 from the graph
 	 */
 	private static <E> void trimGraph(Graph<E> g) {
-		List<Pair<E, E>> edgesToRemove = g.getVertexSet().values().stream()
-				.flatMap(source -> source.getAdjList().values().stream()
-						.filter(e -> e.getRight() == 0)
-						.map(p -> new Pair<>(source.getData(), p.getLeft().getData())))
-				.collect(Collectors.toList());
+		// Cache all the edges so that we can remove them without
+		// invalidating our iterator
+		List<Pair<E, E>> edgesToRemove = g.stream().flatMap(
+			source -> g.getDirectSuccessors(source).get().stream()
+				.filter(dest -> g.getEdgeCost(source, dest).orElse(Double.NaN) == 0)
+				.map(dest -> new Pair<>(source, dest)))
+			.collect(Collectors.toList());
 
-		edgesToRemove.forEach((e) -> g.remove(e.getLeft(), e.getRight()));
+		edgesToRemove.forEach((e) -> g.removeEdge(e.getLeft(), e.getRight()));
 	}
 
 	/**
@@ -285,6 +264,6 @@ public class MaxFlow<E> extends Graph<E> {
 			maxFlow.doIteration();
 		}
 
-		return maxFlow.totalFlow != 0.0 ? OptionalDouble.of(maxFlow.totalFlow) : OptionalDouble.empty();
+		return maxFlow.getTotalFlow() != 0.0 ? OptionalDouble.of(maxFlow.getTotalFlow()) : OptionalDouble.empty();
 	}
 }

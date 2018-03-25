@@ -20,7 +20,7 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 	@SuppressWarnings("unchecked")
 	public Graph<?> deserialize(JsonElement json, Type type, JsonDeserializationContext jsonDeserializationContext)
 			throws JsonParseException {
-		Graph<?> graph = new Graph<>();
+		Graph<Object> graph = new Graph<>();
 		JsonArray vertices = json.getAsJsonObject().get("vertices").getAsJsonArray();
 
 		Type[] typeParameters = ((ParameterizedType)type).getActualTypeArguments();
@@ -29,20 +29,19 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 		for (JsonElement jeVertex: vertices) {
 			JsonObject jVertex = jeVertex.getAsJsonObject();
 
-			Vertex vertex
-					= graph.addToVertexSet(jsonDeserializationContext.deserialize(jVertex.get("id"), idType));
+			Object vertex = jsonDeserializationContext.deserialize(jVertex.get("id"), idType);
+
+			graph.addVertex(vertex);
 
 			JsonArray edges = jVertex.get("edges").getAsJsonArray();
 
 			for (JsonElement jeEdge: edges) {
 				JsonObject jEdge = jeEdge.getAsJsonObject();
-
-				Vertex destination
-						= graph.addToVertexSet(jsonDeserializationContext.deserialize(jEdge.get("destination"), idType));
+				Object destination = jsonDeserializationContext.deserialize(jEdge.get("destination"), idType);
 
 				double weight = jEdge.get("weight").getAsDouble();
 
-				vertex.addToAdjListOrUpdate(destination, weight);
+				graph.addEdgeOrUpdate(vertex, destination, weight);
 			}
 		}
 
@@ -51,12 +50,14 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public JsonElement serialize(Graph<?> graph, Type type, JsonSerializationContext jsonSerializationContext) {
+	public JsonElement serialize(Graph<?> graph, Type idType, JsonSerializationContext jsonSerializationContext) {
 		JsonObject jGraph = new JsonObject();
 		JsonArray vertices = new JsonArray();
 
-		graph.getVertexSet().values().stream()
-				.map(v -> serializeVertex(v, jsonSerializationContext))
+		graph.stream()
+				// While we're casting it to a Graph<Object>, the code will still
+				// work fine because of the type tag
+				.map(v -> this.serializeVertex((Graph<Object>) graph, v, idType, jsonSerializationContext))
 				.forEachOrdered(vertices::add);
 
 		jGraph.add("vertices", vertices);
@@ -64,15 +65,17 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 		return jGraph;
 	}
 
-	private <T> JsonObject serializeVertex(Vertex<T> vertex, JsonSerializationContext jsonSerializationContext) {
+	private <T> JsonObject serializeVertex(Graph<T> graph, T vertex, Type idType,
+	                                       JsonSerializationContext jsonSerializationContext) {
 		JsonObject jVertex = new JsonObject();
 
-		jVertex.add("id", jsonSerializationContext.serialize(vertex.getData()));
+		jVertex.add("id", jsonSerializationContext.serialize(vertex, idType));
 
 		JsonArray edges = new JsonArray();
 
-		vertex.getAdjList().values().stream()
-				.map(e -> serializeEdge(e, jsonSerializationContext))
+		graph.getDirectSuccessors(vertex).get().stream()
+				.map(dest -> serializeEdge(dest, graph.getEdgeCost(vertex, dest).getAsDouble(),
+				                           idType, jsonSerializationContext))
 				.forEachOrdered(edges::add);
 
 		jVertex.add("edges", edges);
@@ -80,11 +83,11 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 		return jVertex;
 	}
 
-	private <T> JsonObject serializeEdge(Pair<Vertex<T>, Double> edge,
+	private <T> JsonObject serializeEdge(T dest, double weight, Type idType,
 	                                     JsonSerializationContext jsonSerializationContext) {
 		JsonObject jEdge = new JsonObject();
-		jEdge.addProperty("weight", edge.getRight());
-		jEdge.add("destination", jsonSerializationContext.serialize(edge.getLeft().getData()));
+		jEdge.addProperty("weight", weight);
+		jEdge.add("destination", jsonSerializationContext.serialize(dest));
 
 		return jEdge;
 	}

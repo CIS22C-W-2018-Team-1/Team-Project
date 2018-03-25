@@ -9,11 +9,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.DoubleBinaryOperator;
+import java.util.stream.Stream;
 
 // All changes to graph class by Dimitriye Danilovic
 
-public class Graph<E> {
+public class Graph<E> implements Iterable<E> {
 	// the graph data is all here --------------------------
 	private HashMap<E, Vertex<E> > vertexSet = new HashMap<>();
 
@@ -36,6 +41,55 @@ public class Graph<E> {
 		src.addToAdjListOrUpdate(dst, cost);
 	}
 
+	/**
+	 * Gets the cost of the edge between the given vertices
+	 * if one exists.
+	 *
+	 * @param   source   the id of the source vertex
+	 * @param   dest     the id of the destination vertex
+	 *
+	 * @return   the cost if the edge exists, OptionalDouble.empty() otherwise
+	 */
+	public OptionalDouble getEdgeCost(E source, E dest) {
+		return Optional.ofNullable(vertexSet.get(dest))
+				.map(vertexSet.get(source)::getCostTo).orElse(OptionalDouble.empty());
+	}
+
+	/**
+	 * Returns an unmodifiable set containing all direct
+	 * successors of the provided vertex. This set is
+	 * backed by the graph, and will remain valid even
+	 * if edges are removed from the graph, however
+	 * its iterator will not.
+	 *
+	 * @param   source   the source vertex whose successors to retrieve
+	 * @return   the successor set if the vertex exists, Optional.empty() otherwise
+	 */
+	public Optional<Set<E>> getDirectSuccessors(E source) {
+		return Optional.ofNullable(vertexSet.get(source))
+				.map(Vertex::getAdjList)
+				.map(Map::keySet)
+				.map(Collections::unmodifiableSet);
+	}
+
+	/**
+	 * Removes the edge between the given vertices
+	 * if present.
+	 *
+	 * @param   source   the data of the source vertex
+	 * @param   dest     the data of the destination vertex
+	 *
+	 * @return   true if there was an edge to remove
+	 */
+	public boolean removeEdge(E source, E dest) {
+		Vertex<E> startVertex = vertexSet.get(source);
+		if (startVertex == null) { return false; }
+
+		Vertex<E> endVertex = vertexSet.get(dest);
+
+		return endVertex != null && startVertex.removeFromAdjList(endVertex);
+	}
+
 	// Meant to be overridden to provide the proper vertex subclass
 	protected Vertex<E> makeVertex(E x) {
 		return new Vertex<>(x);
@@ -45,15 +99,15 @@ public class Graph<E> {
 	 * Retrieves the vertex with the given data,
 	 * creating it if necessary.
 	 *
-	 * @param   x   the data for the vertex
+	 * @param   data   the data for the vertex
 	 * @return   the vertex with the given data
 	 */
-	public Vertex<E> addToVertexSet(E x) {
+	protected Vertex<E> addToVertexSet(E data) {
 		Vertex<E> retVal;
 		Vertex<E> foundVertex;
 
 		// find if Vertex already in the list:
-		foundVertex = vertexSet.get(x);
+		foundVertex = vertexSet.get(data);
 
 		if ( foundVertex != null ) // found it, so return it
 		{
@@ -61,55 +115,52 @@ public class Graph<E> {
 		}
 
 		// the vertex not there, so create one
-		retVal = makeVertex(x);
-		vertexSet.put(x, retVal);
+		retVal = makeVertex(data);
+		vertexSet.put(data, retVal);
 
 		return retVal;   // should never happen
 	}
 
 	/**
-	 * Gets the vertex with the given data if present
+	 * Adds to the vertex set a vertex with the given data
+	 * if none is present.
 	 *
-	 * @param   x   the data for which to get a vertex
-	 *
-	 * @return   the vertex if found, null otherwise
+	 * @param   data   the data for the vertex
+	 * @return   true if a new vertex was created
 	 */
-	public Vertex<E> getVertex(E x) {
-		return vertexSet.get(x);
+	public boolean addVertex(E data) {
+		boolean ret = !vertexSet.containsKey(data);
+
+		addToVertexSet(data);
+
+		return ret;
+	}
+
+	/**
+	 * Returns true if the graph contains a vertex with the
+	 * given data.
+	 *
+	 * @param   data   the data of the vertex to check for
+	 * @return   true if the vertex exists
+	 */
+	public boolean containsVertex(E data) {
+		return vertexSet.containsKey(data);
 	}
 
 	/**
 	 * Removes the vertex with the given data
 	 *
-	 * @param   x   the data of the vertex to remove
+	 * @param   data   the data of the vertex to remove
 	 * @return   true if there was a vertex to remove
 	 */
-	public boolean removeVertex(E x) {
-		Vertex<E> vertex = getVertex(x);
+	public boolean removeVertex(E data) {
+		Vertex<E> vertex = vertexSet.get(data);
 		if (vertex == null) { return false; }
 
 		vertex.incomingEdges.forEach((v) -> v.removeFromAdjList(vertex));
-		vertexSet.remove(x);
+		vertexSet.remove(data);
 
 		return true;
-	}
-
-	/**
-	 * Removes the edge between the given vertices
-	 * if present.
-	 *
-	 * @param   start   the data of the source vertex
-	 * @param   end     the data of the destination vertex
-	 *
-	 * @return   true if there was an edge to remove
-	 */
-	public boolean remove(E start, E end) {
-		Vertex<E> startVertex = vertexSet.get(start);
-		if (startVertex == null) { return false; }
-
-		Vertex<E> endVertex = vertexSet.get(end);
-
-		return endVertex != null && startVertex.removeFromAdjList(endVertex);
 	}
 
 	/**
@@ -147,18 +198,6 @@ public class Graph<E> {
 		{
 			iter.next().getValue().unvisit();
 		}
-	}
-
-	/**
-	 * Gets the graph's vertex set as an unmodifiable map.
-	 *
-	 * @return   an unmodifiable map representing the graph's vertex set
-	 */
-	public Map<E, Vertex<E>> getVertexSet() {
-		// It may be desirable to make the map modifiable through
-		// a wrapper layer which preserves the graph's invariants
-		// however I believe this falls outside the scope of permitted modifications
-		return Collections.unmodifiableMap(vertexSet);
 	}
 
 	/**
@@ -242,6 +281,44 @@ public class Graph<E> {
 		}
 	}
 
+	@Override
+	public Iterator<E> iterator() {
+		return vertexSet.keySet().iterator();
+	}
+
+	public Stream<E> stream() {
+		return vertexSet.keySet().stream();
+	}
+
+	/**
+	 * Adds all vertices and edges from the given graph to this one,
+	 * making this graph a supergraph of it.
+	 *
+	 * Any edge conflicts (where the same edge is present in both graphs)
+	 * are resolved via the provided edgeMergeOperator, which should be
+	 * a function of the form:
+	 *
+	 * (graphEdge, subgraphEdge) -> outputEdge
+	 *
+	 * @param   subgraph            the graph to add to this graph
+	 * @param   edgeMergeOperator   the operator used to merge conflicting edges
+	 */
+	public void addSubgraph(Graph<E> subgraph, DoubleBinaryOperator edgeMergeOperator) {
+		subgraph.vertexSet.values().forEach(
+			vertex -> vertex.getAdjList().values().forEach(
+				edge -> {
+					Vertex<E> source = addToVertexSet(vertex.getData());
+					Vertex<E> dest   = addToVertexSet(edge.getLeft().getData());
+
+					OptionalDouble oldCost = source.getCostTo(dest);
+					if (oldCost.isPresent()) {
+						source.addToAdjListOrUpdate(dest,
+								edgeMergeOperator.applyAsDouble(oldCost.getAsDouble(), edge.getRight()));
+					} else {
+						source.addToAdjListOrUpdate(dest, edge.getRight());
+					}
+				}));
+	}
 
 // WRITE THE INSTANCE METHOD HERE TO
 	//         WRITE THE GRAPH's vertices and its
