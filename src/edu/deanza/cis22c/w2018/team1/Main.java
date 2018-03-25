@@ -17,10 +17,13 @@ import edu.deanza.cis22c.w2018.team1.swing.overlay.VertexNameOverlay;
 import edu.deanza.cis22c.w2018.team1.swing.tool.EdgeTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowVisualizeTool;
+import edu.deanza.cis22c.w2018.team1.swing.util.ContextActionEvent;
 import edu.deanza.cis22c.w2018.team1.swing.util.OrderedMouseListener;
 import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
 import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
@@ -41,10 +44,12 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -60,6 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class Main implements Runnable {
@@ -231,7 +237,7 @@ public class Main implements Runnable {
 		});
 		vMaxFlow.setText("Visualize max flow");
 
-		JMenuItem deleteVertices = rightClickMenu.addMenuItem( s -> !s.isEmpty(), e -> {
+		Consumer<ContextActionEvent<? extends Set<E>>> deleter = e -> {
 			Graph<E> graph = pane.getGraph();
 			UndoItem item = UndoItem.create( pane::repaint, pane::repaint );
 			for (E vertex: e.getContext()) {
@@ -249,7 +255,18 @@ public class Main implements Runnable {
 			}
 			item.redo();
 			history.addToHistory(item);
-		} );
+		};
+
+		// A bit of a hacky solution, but out of time for anything more robust.
+		pane.getInputMap().put(KeyStroke.getKeyStroke("DELETE"), "delete");
+		pane.getActionMap().put("delete", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				deleter.accept(new ContextActionEvent<>(e, null, selector.getSelection()));
+			}
+		});
+
+		JMenuItem deleteVertices = rightClickMenu.addMenuItem( s -> !s.isEmpty(), deleter);
 		deleteVertices.setText("Delete");
 
 		JMenuItem deleteEdges = rightClickMenu.addMenuItem( s -> s.size() >= 2, e -> {
