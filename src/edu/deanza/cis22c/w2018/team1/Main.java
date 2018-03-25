@@ -9,17 +9,18 @@ import edu.deanza.cis22c.w2018.team1.serialization.GraphSerializer;
 import edu.deanza.cis22c.w2018.team1.structure.Pair;
 import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import edu.deanza.cis22c.w2018.team1.swing.ContextMenu;
-import edu.deanza.cis22c.w2018.team1.swing.tool.EdgeTool;
-import edu.deanza.cis22c.w2018.team1.swing.overlay.EdgeWeightOverlay;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 import edu.deanza.cis22c.w2018.team1.swing.GraphSelectionHandler;
+import edu.deanza.cis22c.w2018.team1.swing.PredicateDecorator;
+import edu.deanza.cis22c.w2018.team1.swing.overlay.EdgeWeightOverlay;
+import edu.deanza.cis22c.w2018.team1.swing.overlay.VertexNameOverlay;
+import edu.deanza.cis22c.w2018.team1.swing.tool.EdgeTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowVisualizeTool;
 import edu.deanza.cis22c.w2018.team1.swing.util.OrderedMouseListener;
-import edu.deanza.cis22c.w2018.team1.swing.PredicateDecorator;
-import edu.deanza.cis22c.w2018.team1.swing.overlay.VertexNameOverlay;
 
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -35,6 +36,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.BufferedReader;
@@ -196,6 +198,12 @@ public class Main implements Runnable {
 
 		frame.setContentPane(layers);
 
+		frame.setJMenuBar(buildMenuBar(frame, pane, layers, elemType));
+
+		return frame;
+	}
+
+	private static <E> JMenuBar buildMenuBar(JFrame frame, GraphPanel<E> pane, JPanel layers, Type elemType) {
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu file = new JMenu("File");
@@ -241,52 +249,45 @@ public class Main implements Runnable {
 
 		JMenu view = new JMenu("View");
 
-		EdgeWeightOverlay<E> edgeWeightOverlay = new EdgeWeightOverlay<>(pane);
-		Runnable edgeWeightRepainter = edgeWeightOverlay::repaint;
-
 		JCheckBoxMenuItem edgeWeights = new JCheckBoxMenuItem("Edge weights");
-		edgeWeights.addActionListener(e -> {
-			if (edgeWeights.getState()) {
-				layers.add(edgeWeightOverlay, 0);
-				pane.addRepaintListener(edgeWeightRepainter);
-				layers.revalidate();
-				layers.repaint();
-			} else {
-				layers.remove(edgeWeightOverlay);
-				pane.removeRepaintListener(edgeWeightRepainter);
-				layers.revalidate();
-				layers.repaint();
-			}
-		});
-
+		ActionListener edgeWeightsAL =
+				makeOverlayCheckboxActionListener(edgeWeights, layers, pane, new EdgeWeightOverlay<>(pane));
+		edgeWeights.addActionListener(edgeWeightsAL);
 		edgeWeights.setState(true);
+		edgeWeightsAL.actionPerformed(null);
+
 		view.add(edgeWeights);
 
-		VertexNameOverlay<E> vertexNameOverlay = new VertexNameOverlay<>(pane);
-		Runnable vertexNameRepainter = vertexNameOverlay::repaint;
-
 		JCheckBoxMenuItem vertexNames = new JCheckBoxMenuItem("Vertex names");
-		vertexNames.addActionListener(e -> {
-			if (vertexNames.getState()) {
-				layers.add(vertexNameOverlay, 0);
-				pane.addRepaintListener(vertexNameRepainter);
-				layers.revalidate();
-				layers.repaint();
-			} else {
-				layers.remove(vertexNameOverlay);
-				pane.removeRepaintListener(vertexNameRepainter);
-				layers.revalidate();
-				layers.repaint();
-			}
-		});
+		ActionListener vertexNamesAL =
+				makeOverlayCheckboxActionListener(vertexNames, layers, pane, new VertexNameOverlay<>(pane));
+		vertexNames.addActionListener(vertexNamesAL);
+		vertexNames.setState(true);
+		vertexNamesAL.actionPerformed(null);
 
 		view.add(vertexNames);
 
 		menuBar.add(view);
 
-		frame.setJMenuBar(menuBar);
+		return menuBar;
+	}
 
-		return frame;
+	private static ActionListener makeOverlayCheckboxActionListener(JCheckBoxMenuItem checkbox, JPanel layers,
+	                                                                GraphPanel<?> graphPanel, JComponent overlay) {
+		Runnable repainter = overlay::repaint;
+		return e -> {
+			if (checkbox.getState()) {
+				layers.add(overlay, 0);
+				graphPanel.addRepaintListener(repainter);
+				layers.revalidate();
+				layers.repaint();
+			} else {
+				layers.remove(overlay);
+				graphPanel.removeRepaintListener(repainter);
+				layers.revalidate();
+				layers.repaint();
+			}
+		};
 	}
 
 	private static Gson gson;
