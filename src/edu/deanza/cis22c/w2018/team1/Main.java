@@ -284,6 +284,8 @@ public class Main implements Runnable {
 					}
 				}
 			}
+			item.redo();
+			history.addToHistory(item);
 			pane.repaint();
 		});
 		deleteEdges.setText("Break connecting edges");

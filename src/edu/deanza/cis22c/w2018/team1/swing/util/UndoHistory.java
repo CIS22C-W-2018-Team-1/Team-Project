@@ -11,7 +11,7 @@ public class UndoHistory {
 	private LinkedStack<UndoItem> redoStack = new LinkedStack<>();
 
 	public enum UndoEvent {
-		ITEM_ADDED, UNDO, REDO
+		ITEM_ADDED, UNDO, REDO, HISTORY_CLEARED
 	}
 
 	private List<Consumer<UndoEvent>> listeners = new LinkedList<>();
@@ -45,6 +45,7 @@ public class UndoHistory {
 	public void clear() {
 		undoStack = new LinkedStack<>();
 		clearForward();
+		triggerListeners(UndoEvent.HISTORY_CLEARED);
 	}
 
 	public void undo() {
