@@ -60,7 +60,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 
 		Optional<E> vertex = pane.getVertexAt(e.getPoint());
 
-		if (vertex.isPresent() && selection.contains(vertex.get())) {
+		if (vertex.isPresent() && selection.contains(vertex.get()) && !e.isShiftDown()) {
 			selection.clear();
 			selection.add(vertex.get());
 			pane.repaint();
@@ -84,6 +84,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		if (vertex.isPresent()) {
 			if (selection.add(vertex.get())) {
 				headItemValid = false;
+				pane.repaint();
 			}
 
 			if (e.getButton() == MouseEvent.BUTTON1) {
