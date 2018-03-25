@@ -1,8 +1,8 @@
 package edu.deanza.cis22c.w2018.team1.swing.tool;
 
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
-import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
-import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
+import edu.deanza.cis22c.w2018.team1.swing.undo.UndoHistory;
+import edu.deanza.cis22c.w2018.team1.swing.undo.UndoItem;
 import edu.deanza.cis22c.w2018.team1.swing.util.Vector2;
 
 import javax.swing.JOptionPane;

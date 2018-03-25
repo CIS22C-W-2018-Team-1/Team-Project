@@ -1,4 +1,4 @@
-package edu.deanza.cis22c.w2018.team1.swing.util;
+package edu.deanza.cis22c.w2018.team1.swing.undo;
 
 public interface UndoItem {
 	void undo();

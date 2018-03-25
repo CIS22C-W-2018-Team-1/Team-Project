@@ -19,8 +19,8 @@ import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowTool;
 import edu.deanza.cis22c.w2018.team1.swing.tool.MaxFlowVisualizeTool;
 import edu.deanza.cis22c.w2018.team1.swing.util.ContextActionEvent;
 import edu.deanza.cis22c.w2018.team1.swing.util.OrderedMouseListener;
-import edu.deanza.cis22c.w2018.team1.swing.util.UndoHistory;
-import edu.deanza.cis22c.w2018.team1.swing.util.UndoItem;
+import edu.deanza.cis22c.w2018.team1.swing.undo.UndoHistory;
+import edu.deanza.cis22c.w2018.team1.swing.undo.UndoItem;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBoxMenuItem;
