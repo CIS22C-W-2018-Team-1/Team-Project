@@ -1,21 +1,15 @@
 package edu.deanza.cis22c.w2018.team1.swing.util;
 
+import edu.deanza.cis22c.w2018.team1.structure.stack.LinkedStack;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class UndoHistory {
-	private static class UndoNode {
-		UndoItem item;
-		UndoNode prev;
-		UndoNode next;
-
-		UndoNode(UndoItem item, UndoNode prev) {
-			this.item = item;
-			this.prev = prev;
-		}
-	}
+	private LinkedStack<UndoItem> undoStack = new LinkedStack<>();
+	private LinkedStack<UndoItem> redoStack = new LinkedStack<>();
 
 	public enum UndoEvent {
 		ITEM_ADDED, UNDO, REDO
@@ -35,47 +29,48 @@ public class UndoHistory {
 		listeners.forEach(l -> l.accept(ev));
 	}
 
-	private UndoNode currentState = new UndoNode(null, null);
-
 	public void addToHistory(UndoItem item) {
-		currentState.next = new UndoNode(item, currentState);
-		currentState = currentState.next;
+		undoStack.push(item);
+		clearForward();
 		triggerListeners(UndoEvent.ITEM_ADDED);
 	}
 
 	public void fuseToHistory(UndoItem item) {
-		currentState.item = currentState.item.compose(item);
+		undoStack.push(undoStack.pop().compose(item));
 	}
 
 	public void clearForward() {
-		currentState.next = null;
+		redoStack = new LinkedStack<>();
 	}
 
 	public void clear() {
-		currentState = new UndoNode(null, null);
+		undoStack = new LinkedStack<>();
+		clearForward();
 	}
 
 	public void undo() {
 		if (canUndo()) {
-			currentState.item.undo();
-			currentState = currentState.prev;
+			UndoItem item = undoStack.pop();
+			item.undo();
+			redoStack.push(item);
 		}
 		triggerListeners(UndoEvent.UNDO);
 	}
 
 	public boolean canUndo() {
-		return currentState != null && currentState.prev != null;
+		return !undoStack.isEmpty();
 	}
 
 	public void redo() {
 		if (canRedo()) {
-			currentState = currentState.next;
-			currentState.item.redo();
+			UndoItem item = redoStack.pop();
+			item.redo();
+			undoStack.push(item);
 		}
 		triggerListeners(UndoEvent.REDO);
 	}
 
 	public boolean canRedo() {
-		return currentState != null && currentState.next != null;
+		return !redoStack.isEmpty();
 	}
 }
