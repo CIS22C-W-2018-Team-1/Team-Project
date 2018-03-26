@@ -54,9 +54,12 @@ public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializ
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public JsonElement serialize(Graph<?> graph, Type idType, JsonSerializationContext jsonSerializationContext) {
+	public JsonElement serialize(Graph<?> graph, Type type, JsonSerializationContext jsonSerializationContext) {
 		JsonObject jGraph = new JsonObject();
 		JsonArray vertices = new JsonArray();
+
+		Type[] typeParameters = ((ParameterizedType)type).getActualTypeArguments();
+		Type idType = typeParameters[0];
 
 		graph.stream()
 				// While we're casting it to a Graph<Object>, the code will still
