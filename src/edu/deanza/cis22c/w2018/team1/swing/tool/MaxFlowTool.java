@@ -4,8 +4,12 @@ import edu.deanza.cis22c.w2018.team1.structure.graph.maxflow.MaxFlow;
 import edu.deanza.cis22c.w2018.team1.swing.GraphPanel;
 import edu.deanza.cis22c.w2018.team1.swing.TabularLogFrame;
 
+import javax.swing.WindowConstants;
+import java.awt.AWTEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,8 +28,19 @@ public class MaxFlowTool<E> implements MouseListener {
 	private E source;
 	private List<ToolListener> listeners = new LinkedList<>();
 	private List<String[]> log = new ArrayList<>();
-	private TabularLogFrame logFrame
-			= new TabularLogFrame("Max Flows", new String[]{"source", "sink", "max flow"}, log);
+	private TabularLogFrame logFrame;
+
+	private void makeLogFrame() {
+		logFrame = new TabularLogFrame("Max Flows", new String[]{"source", "sink", "max flow"}, log);
+		logFrame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosed(WindowEvent e) {
+				log = new ArrayList<>();
+				makeLogFrame();
+			}
+		});
+		logFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+	}
 
 	public void addToolListener(ToolListener l) {
 		listeners.add(l);
@@ -37,6 +52,7 @@ public class MaxFlowTool<E> implements MouseListener {
 
 	public MaxFlowTool(GraphPanel<E> panel) {
 		this.panel = panel;
+		makeLogFrame();
 	}
 
 	public void setSource(E source) {
