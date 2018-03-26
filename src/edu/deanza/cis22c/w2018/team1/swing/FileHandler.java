@@ -43,6 +43,7 @@ public class FileHandler<E> {
 			}
 		}
 		unsavedChanges = false;
+		currentSession = null;
 		return Optional.of(fileFactory.get());
 	}
 
@@ -61,9 +62,11 @@ public class FileHandler<E> {
 		}
 		int result = fileChooser.showOpenDialog(parent);
 		if (result == JFileChooser.APPROVE_OPTION) {
-			Optional<E> retVal = loader.apply(fileChooser.getSelectedFile());
+			File newSession = fileChooser.getSelectedFile();
+			Optional<E> retVal = loader.apply(newSession);
 			if (retVal.isPresent()) {
 				unsavedChanges = false;
+				currentSession = newSession;
 			}
 			return retVal;
 		}
