@@ -192,6 +192,10 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		return (pair) -> selection.contains(pair.getLeft()) || selecting != null && selecting.contains(pair.getRight());
 	}
 
+	public void clear() {
+		selection.clear();
+	}
+
 	public Set<E> getSelection() {
 		return Collections.unmodifiableSet(selection);
 	}

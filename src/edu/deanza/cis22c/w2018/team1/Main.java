@@ -185,7 +185,7 @@ public class Main implements Runnable {
 
 		frame.setContentPane(scroll);
 
-		frame.setJMenuBar(buildMenuBar(frame, pane, history, layers, elemType));
+		frame.setJMenuBar(buildMenuBar(frame, pane, history, layers, selector, elemType));
 
 		return frame;
 	}
@@ -350,12 +350,13 @@ public class Main implements Runnable {
 	 * @param   pane       the graph panel
 	 * @param   history    the undo history
 	 * @param   layers     the layered panel for applying overlays
+	 * @param   selector         the graph's selection system
 	 * @param   elemType   a type token for deserializing vertices
 	 *
 	 * @return   the menu bar
 	 */
 	private static <E> JMenuBar buildMenuBar(JFrame frame, GraphPanel<E> pane, UndoHistory history,
-	                                         JPanel layers, Type elemType) {
+	                                         JPanel layers, GraphSelectionHandler<E> selector, Type elemType) {
 		JMenuBar menuBar = new JMenuBar();
 
 		JMenu file = new JMenu("File");
@@ -380,6 +381,7 @@ public class Main implements Runnable {
 					pane.addPositionData(pair.getRight());
 					pane.repaint();
 					history.clear();
+					selector.clear();
 				}));
 		newFile.setAccelerator(KeyStroke.getKeyStroke('N',
 				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
@@ -393,6 +395,7 @@ public class Main implements Runnable {
 						pane.addPositionData(pair.getRight());
 						pane.repaint();
 						history.clear();
+						selector.clear();
 					}));
 		open.setAccelerator(KeyStroke.getKeyStroke('O',
 				Toolkit.getDefaultToolkit ().getMenuShortcutKeyMask()));
