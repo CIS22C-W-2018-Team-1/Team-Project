@@ -17,6 +17,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * A right click menu which can vary its contents based on the
+ * context and passes the context on to the triggered menu items
+ *
+ * @param   <C>   the type for the context
+ *
+ * @author Dimitriye Danilovic
+ */
 public class ContextMenu<C> {
 	private Point mousePos = new Point();
 	private C currentContext;
@@ -31,6 +39,10 @@ public class ContextMenu<C> {
 		menuItems = new ArrayList<>();
 	}
 
+	/**
+	 * The mouse adapter which triggers the popup menu when appropriate,
+	 * i.e. on right click on most systems.
+	 */
 	private MouseListener popupAdapter = new MouseAdapter() {
 		private void displayRightClickMenu(MouseEvent e) {
 			mousePos = e.getPoint();
@@ -69,12 +81,21 @@ public class ContextMenu<C> {
 
 	public JMenuItem addMenuItem(Predicate<C> shouldShow, Consumer<ContextActionEvent<? extends C>> action) {
 		JMenuItem menuItem = new JMenuItem();
+
+		// Wrap the ActionEvent with context data before passing to the passed listener.
 		menuItem.addActionListener((e) -> action.accept(new ContextActionEvent<C>(e, this.mousePos, this.currentContext)));
 		menuItems.add(new Pair<>(shouldShow, menuItem));
 
 		return menuItem;
 	}
 
+	/**
+	 * Sets the function which is used to retrieve the
+	 * context based on mouse position. Note that this need not,
+	 * and in fact likely should not be a pure function.
+	 *
+	 * @param   contextSupplier   the context supplier
+	 */
 	public void setContextSupplier(Function<Point2D, C> contextSupplier) {
 		this.contextSupplier = contextSupplier;
 	}

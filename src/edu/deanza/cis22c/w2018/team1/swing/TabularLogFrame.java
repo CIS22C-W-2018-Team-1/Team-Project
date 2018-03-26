@@ -22,6 +22,11 @@ import java.io.Writer;
 import java.util.List;
 import java.util.StringJoiner;
 
+/**
+ * Logs data in tabular form and writes it to CSV when the user requests it.
+ *
+ * @author Dimitriye Danilovic
+ */
 public class TabularLogFrame extends JFrame {
 	private String[] colNames;
 	private List<String[]> logList;

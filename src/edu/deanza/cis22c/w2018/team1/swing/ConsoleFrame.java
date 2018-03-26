@@ -5,6 +5,11 @@ import javax.swing.JTextArea;
 import java.awt.Font;
 import java.io.Writer;
 
+/**
+ * A frame which provides an output console to be written to by a writer.
+ *
+ * @author Dimitriye Danilovic
+ */
 public class ConsoleFrame extends JFrame {
 	private JTextArea textArea;
 	public ConsoleFrame() {

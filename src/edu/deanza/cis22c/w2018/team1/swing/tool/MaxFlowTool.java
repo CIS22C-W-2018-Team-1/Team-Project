@@ -12,6 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
+/**
+ * Implementation of the MaxFlow UI tool
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class MaxFlowTool<E> implements MouseListener {
 	private GraphPanel<E> panel;
 	private E source;

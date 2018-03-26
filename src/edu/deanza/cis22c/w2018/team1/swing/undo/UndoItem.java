@@ -1,5 +1,10 @@
 package edu.deanza.cis22c.w2018.team1.swing.undo;
 
+/**
+ * An operation which can be undone and redone.
+ *
+ * @author Dimitriye Danilovic
+ */
 public interface UndoItem {
 	void undo();
 	void redo();

@@ -9,6 +9,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
+/**
+ * A UI overlay which displays the names of vertices beside them.
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class VertexNameOverlay<E> extends JPanel {
 	private GraphPanel<E> graphPanel;
 

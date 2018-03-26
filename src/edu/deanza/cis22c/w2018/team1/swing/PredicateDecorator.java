@@ -4,6 +4,13 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * Decorates a vertex or edge based on its satisfaction of a predicate
+ * @param <I> the type to decorate
+ * @param <O> the type of the decoration
+ *
+ * @author Dimitriye Danilovic
+ */
 public class PredicateDecorator<I, O> implements Function<I, Optional<O>> {
 	private Predicate<I> predicate;
 	private Optional<O> style;

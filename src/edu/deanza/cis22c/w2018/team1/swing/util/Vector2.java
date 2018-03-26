@@ -5,6 +5,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.util.Objects;
 
+/**
+ * A useful 2d math class.
+ *
+ * @author Dimitriye Danilovic
+ */
 public class Vector2 {
 	private double x, y;
 
@@ -63,6 +68,15 @@ public class Vector2 {
 		return new Point((int) x, (int) y);
 	}
 
+	/**
+	 * Linearly interpolates from this to the
+	 * parameter vector by a factor of alpha
+	 *
+	 * @param   o       the vector to lerp with
+	 * @param   alpha   an aliasing value
+	 *
+	 * @return   the result vector
+	 */
 	public Vector2 lerp(Vector2 o, double alpha) {
 		return times(1 - alpha).plus(o.times(alpha));
 	}

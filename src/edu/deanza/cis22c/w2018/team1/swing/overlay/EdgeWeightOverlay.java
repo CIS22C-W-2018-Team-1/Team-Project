@@ -11,6 +11,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
+/**
+ * An overlay which shows edge weights next to them in the graph.
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class EdgeWeightOverlay<E> extends JPanel {
 	private GraphPanel<E> graphPanel;
 

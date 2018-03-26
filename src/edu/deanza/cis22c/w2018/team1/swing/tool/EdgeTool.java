@@ -18,6 +18,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Implementation of the edge drawing UI tool
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class EdgeTool<E> implements MouseInputListener {
 	private E source;
 	private GraphPanel<E> panel;

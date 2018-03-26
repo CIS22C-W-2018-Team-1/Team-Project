@@ -68,6 +68,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * @author Dimitriye Danilovic
+ * @author Marvin Britton
+ */
 public class Main implements Runnable {
 	public static void main(String... args) {
 		try {
@@ -80,12 +84,24 @@ public class Main implements Runnable {
 		}
 	}
 
+	/**
+	 * Creates an undo item for the removal of an edge
+	 *
+	 * @return   an UndoItem representing the removal of the given edge
+	 */
 	private static <E> UndoItem removeEdgeUndoItem(Graph<E> graph, E source, E dest, double weight) {
 		return UndoItem.create(
 				() -> graph.addEdgeOrUpdate(source, dest, weight),
 				() -> graph.removeEdge(source, dest));
 	}
 
+	/**
+	 * Builds the primary frame for the program
+	 *
+	 * @param vertIdSupplier   the supplier of ids for new vertices
+	 * @param elemType         a type tag for the element type of the displayed graph
+	 * @return
+	 */
 	private static <E> JFrame buildGraphFrame(Supplier<E> vertIdSupplier, Type elemType) {
 		JFrame frame = new JFrame();
 
@@ -108,7 +124,7 @@ public class Main implements Runnable {
 		OrderedMouseListener listeners = new OrderedMouseListener();
 
 		ContextMenu<Set<E>> rightClickMenu
-				= buildRClickMenu(frame, vertIdSupplier, listeners, selector, pane, layers, history);
+				= buildRClickMenu(vertIdSupplier, listeners, selector, pane, layers, history);
 
 		listeners.addListener(rightClickMenu.getTriggerListener());
 		listeners.addListener(selector);
@@ -174,7 +190,19 @@ public class Main implements Runnable {
 		return frame;
 	}
 
-	private static <E> ContextMenu<Set<E>> buildRClickMenu(JFrame frame, Supplier<E> vertIdSupplier,
+	/**
+	 * Builds the right click menu for use with the graph
+	 *
+	 * @param   vertIdSupplier   the supplier of ids for new vertices
+	 * @param   listeners        the listener cascade for hooking onto
+	 * @param   selector         the graph's selection system
+	 * @param   pane             the graph panel
+	 * @param   layers           the layering panel for putting overlays on the graph
+	 * @param   history          the undo history
+	 *
+	 * @return   the right click menu
+	 */
+	private static <E> ContextMenu<Set<E>> buildRClickMenu(Supplier<E> vertIdSupplier,
 	                                                       OrderedMouseListener listeners,
 	                                                       GraphSelectionHandler<E> selector,
 	                                                       GraphPanel<E> pane, JPanel layers,
@@ -315,6 +343,17 @@ public class Main implements Runnable {
 		return rightClickMenu;
 	}
 
+	/**
+	 * Builds the menu bar
+	 *
+	 * @param   frame      the frame to which the menu bar will belong
+	 * @param   pane       the graph panel
+	 * @param   history    the undo history
+	 * @param   layers     the layered panel for applying overlays
+	 * @param   elemType   a type token for deserializing vertices
+	 *
+	 * @return   the menu bar
+	 */
 	private static <E> JMenuBar buildMenuBar(JFrame frame, GraphPanel<E> pane, UndoHistory history,
 	                                         JPanel layers, Type elemType) {
 		JMenuBar menuBar = new JMenuBar();
@@ -422,6 +461,14 @@ public class Main implements Runnable {
 		return menuBar;
 	}
 
+	/**
+	 * Makes the driving action listener for a JCheckBoxMenuItem which controls an overlay
+	 * @param   checkbox     the JCheckBoxMenuItem which will be controlled
+	 * @param   layers       the overlay container
+	 * @param   graphPanel   the graph panel, used for tracking of repaints
+	 * @param   overlay      the overlay to be controlled
+	 * @return
+	 */
 	private static ActionListener makeOverlayCheckboxActionListener(JCheckBoxMenuItem checkbox, JPanel layers,
 	                                                                GraphPanel<?> graphPanel, JComponent overlay) {
 		Runnable repainter = overlay::repaint;
@@ -449,8 +496,16 @@ public class Main implements Runnable {
 		gson = gBuilder.create();
 	}
 
-	private static <E> Optional<Pair<Graph<E>, Map<E, Point2D>>> readFile(File f, Type elemType) {
-		try (BufferedReader s = new BufferedReader(new FileReader(f))) {
+	/**
+	 * Reads the provided file and returns a graph with associated position data
+	 *
+	 * @param file       file
+	 * @param elemType   a type token for deserialization
+	 *
+	 * @return
+	 */
+	private static <E> Optional<Pair<Graph<E>, Map<E, Point2D>>> readFile(File file, Type elemType) {
+		try (BufferedReader s = new BufferedReader(new FileReader(file))) {
 			Type graphType = new ParameterizedType() {
 				@Override
 				public Type[] getActualTypeArguments() {
@@ -494,8 +549,16 @@ public class Main implements Runnable {
 		return Optional.empty();
 	}
 
-	private static <E> void writeToFile(File f, Graph<E> g, Map<E, Point2D> posMap, Type elemType) {
-		try (BufferedWriter s = new BufferedWriter(new FileWriter(f))) {
+	/**
+	 * Writes the provided graph and position data to the provided file.
+	 *
+	 * @param file       the file to write to
+	 * @param graph      the graph
+	 * @param posMap     the position data
+	 * @param elemType   a type token for serialization
+	 */
+	private static <E> void writeToFile(File file, Graph<E> graph, Map<E, Point2D> posMap, Type elemType) {
+		try (BufferedWriter s = new BufferedWriter(new FileWriter(file))) {
 			Type graphType = new ParameterizedType() {
 				@Override
 				public Type[] getActualTypeArguments() {
@@ -513,7 +576,7 @@ public class Main implements Runnable {
 				}
 			};
 
-			JsonObject obj = gson.toJsonTree(g, graphType).getAsJsonObject();
+			JsonObject obj = gson.toJsonTree(graph, graphType).getAsJsonObject();
 			JsonArray vertices = obj.getAsJsonArray("vertices");
 
 			vertices.forEach((eVert) -> {

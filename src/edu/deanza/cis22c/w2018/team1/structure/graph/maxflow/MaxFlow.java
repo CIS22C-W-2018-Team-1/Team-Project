@@ -15,6 +15,13 @@ import java.util.OptionalDouble;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * An implementation of Dinic's algorithm for finding maximal flows.
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class MaxFlow<E> extends Graph<E> {
 	private MaxFlowVertex<E> source, dest;
 

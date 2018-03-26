@@ -7,6 +7,12 @@ import java.awt.event.MouseMotionListener;
 import java.util.LinkedList;
 import java.util.function.BiConsumer;
 
+/**
+ * A class to impose an ordering on mouse listeners, where otherwise
+ * the order of triggering is undefined.
+ *
+ * @author Dimitriye Danilovic
+ */
 public class OrderedMouseListener implements MouseInputListener {
 	private LinkedList<Object> listeners;
 

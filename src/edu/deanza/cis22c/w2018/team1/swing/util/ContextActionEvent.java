@@ -3,12 +3,20 @@ package edu.deanza.cis22c.w2018.team1.swing.util;
 import java.awt.event.ActionEvent;
 import java.awt.geom.Point2D;
 
-public class ContextActionEvent<E> {
+/**
+ * A class for use with the ContextMenu. Could perhaps be generalized
+ * further in the future.
+ *
+ * @param   <C>   the context type
+ *
+ * @author Dimitriye Danilovic
+ */
+public class ContextActionEvent<C> {
 	private ActionEvent e;
 	private Point2D pos;
-	private E context;
+	private C context;
 
-	public ContextActionEvent(ActionEvent e, Point2D pos, E context) {
+	public ContextActionEvent(ActionEvent e, Point2D pos, C context) {
 		this.e = e;
 		this.pos = pos;
 		this.context = context;
@@ -22,7 +30,7 @@ public class ContextActionEvent<E> {
 		return pos;
 	}
 
-	public E getContext() {
+	public C getContext() {
 		return context;
 	}
 }

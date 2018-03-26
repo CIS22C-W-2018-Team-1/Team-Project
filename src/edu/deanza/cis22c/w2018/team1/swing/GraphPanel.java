@@ -27,6 +27,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ * A JPanel which renders a graph
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class GraphPanel<E> extends JPanel {
 	private Graph<E> graph;
 	private HashMap<E, Point2D> positionTable;
@@ -237,6 +244,12 @@ public class GraphPanel<E> extends JPanel {
 		return decoratorLadder(edgeDecorators, edgeStyle, edge);
 	}
 
+	/**
+	 * Computes the line along which the edge is to be drawn
+	 *
+	 * @param   edge   the edge
+	 * @return   the line, if there is position data for the edge
+	 */
 	public Optional<Line2D> getEdgeLine(Pair<E, E> edge) {
 		return Optional.ofNullable(positionTable.get(edge.getLeft())).map(Vector2::new).flatMap((sourcePos) ->
 			Optional.ofNullable(positionTable.get(edge.getRight())).map(Vector2::new).map((destPos) -> {
@@ -257,6 +270,7 @@ public class GraphPanel<E> extends JPanel {
 	}
 
 	@Override
+	// Rendering code
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 
@@ -266,6 +280,9 @@ public class GraphPanel<E> extends JPanel {
 
 		Rectangle clipBound = g2d.getClipBounds();
 
+		// Since vertices are positioned by their center, the
+		// bounding box needs to be one radius out in every
+		// direction to guarantee that everything renders correctly
 		clipBound.x -= vertexRadius;
 		clipBound.y -= vertexRadius;
 		clipBound.width  += 2 * vertexRadius;
@@ -275,12 +292,13 @@ public class GraphPanel<E> extends JPanel {
 
 		AffineTransform clearTx = g2d.getTransform();
 
+		// Draw edges
+		AffineTransform tx = new AffineTransform();
 		for (E vertex: graph) {
 			Point2D vertexPos = positionTable.get(vertex);
 
 			if (vertexPos == null) { continue; }
 
-			AffineTransform tx = new AffineTransform();
 			for (E dest: graph.getDirectSuccessors(vertex).get()) {
 				Pair<E, E> edge = new Pair<>(vertex, dest);
 				getEdgeLine(edge).ifPresent((edgeLine) -> {
@@ -288,16 +306,19 @@ public class GraphPanel<E> extends JPanel {
 						return;
 					}
 
+					// Check for any styling information
 					Pair<Stroke, Color> style = getStyleFor(edge);
 
 					localContext.setStroke(style.getLeft());
 					localContext.setColor(style.getRight());
 
+					// Draw the line
 					localContext.draw(edgeLine);
 
 					Vector2 edgeEnd = new Vector2(edgeLine.getP2());
 					Vector2 offset  = edgeEnd.minus(edgeLine.getP1());
 
+					// Set up the transform and draw the arrow
 					tx.setToIdentity();
 					tx.translate(edgeEnd.getX(), edgeEnd.getY());
 					tx.rotate(offset.getX(), offset.getY());
@@ -309,6 +330,7 @@ public class GraphPanel<E> extends JPanel {
 			}
 		}
 
+		// Draw the vertices
 		for (E vertex: graph) {
 			Point2D p = positionTable.get(vertex);
 
@@ -321,6 +343,7 @@ public class GraphPanel<E> extends JPanel {
 			localContext.setStroke(style.getLeft());
 			localContext.setColor(style.getRight());
 
+			// Draw a circle centered on the position
 			localContext.draw(new Ellipse2D.Double(p.getX() - vertexRadius, p.getY() - vertexRadius,
 			                                       2 * vertexRadius, 2 * vertexRadius));
 		}

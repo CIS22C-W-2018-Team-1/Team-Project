@@ -13,6 +13,12 @@ import edu.deanza.cis22c.w2018.team1.structure.graph.Graph;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+/**
+ * A helper class to enable the JSON serialization of Graphs.
+ *
+ * @author Roei Burstein
+ * @author Dimitriye Danilovic
+ */
 public class GraphSerializer implements JsonSerializer<Graph<?>>, JsonDeserializer<Graph<?>> {
 	@Override
 	@SuppressWarnings("unchecked")

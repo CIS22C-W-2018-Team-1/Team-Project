@@ -19,7 +19,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
+/**
+ * The selection handling layer.
+ *
+ * @param   <E>   the graph vertex data type
+ *
+ * @author Dimitriye Danilovic
+ */
 public class GraphSelectionHandler<E> implements MouseInputListener {
+	// If I had more time, this class would probably be implemented as a tool.
+	// Unfortunately, I don't, so it's its own special case.
 	private Set<E> selection = new HashSet<>();
 	private Rectangle2D selecting;
 	private Map<E, Point2D> posCache;
@@ -68,6 +77,10 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 	}
 
 	@Override
+	/**
+	 * On a mouse press clear the selection / begin a drag /
+	 * begin a rectangel select, as appropriate.
+	 */
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
 			dragStart = new Vector2(e.getPoint());
@@ -109,6 +122,9 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 	}
 
 	@Override
+	/**
+	 * Drag and rectangle select code
+	 */
 	public void mouseDragged(MouseEvent e) {
 		if (dragStart == null) { return; }
 
@@ -129,6 +145,12 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 	}
 
 	@Override
+	/**
+	 * If there's a drag, terminate it and push an UndoEvent
+	 * to the history.
+	 * If there's a rectangle select, terminae it and add
+	 * all the vertices to the selection.
+	 */
 	public void mouseReleased(MouseEvent e) {
 		Vector2 mousePos = new Vector2(e.getPoint());
 		if (posCache != null) {
@@ -161,6 +183,11 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		}
 	}
 
+	/**
+	 * Used with a predicate decorator to highlight the selection
+	 *
+	 * @return   the predicate
+	 */
 	public Predicate<Pair<E, Point2D>> stylingPredicate() {
 		return (pair) -> selection.contains(pair.getLeft()) || selecting != null && selecting.contains(pair.getRight());
 	}

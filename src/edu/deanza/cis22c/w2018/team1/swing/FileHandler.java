@@ -10,6 +10,14 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * Handles the file session, allowing for save / save as, as well
+ * as notification about overwriting unsaved changes
+ *
+ * @param <E> the data type to be read / written
+ *
+ * @author Dimitriye Danilovic
+ */
 public class FileHandler<E> {
 	private File currentSession;
 	private boolean unsavedChanges = false;
@@ -29,6 +37,12 @@ public class FileHandler<E> {
 		fileChooser.setFileFilter(filter);
 	}
 
+	/**
+	 * Creates a new file.
+	 *
+	 * @param   oldData   the data currently in the buffer, loaded lazily for performance reasons
+	 * @return   the new buffer data
+	 */
 	public Optional<E> newFile(Supplier<E> oldData) {
 		if (unsavedChanges) {
 			int result = JOptionPane.showConfirmDialog(parent,
@@ -47,6 +61,13 @@ public class FileHandler<E> {
 		return Optional.of(fileFactory.get());
 	}
 
+	/**
+	 * Tries to open a file for the user, prompting for unsaved data,
+	 * pulling up the file chooser, etc.
+	 *
+	 * @param   oldData   the data currently in the buffer, loaded lazily for performance reasons
+	 * @return   the new buffer data
+	 */
 	public Optional<E> open(Supplier<E> oldData) {
 		if (unsavedChanges) {
 			int result = JOptionPane.showConfirmDialog(parent,
@@ -73,6 +94,15 @@ public class FileHandler<E> {
 		return Optional.empty();
 	}
 
+	/**
+	 * Implementation method for save and saveAs
+	 *
+	 * @param   data     the buffer data to save
+	 * @param   saveAs   whether to always ask the user where to save,
+	 *                      or only if we don't know where
+	 *
+	 * @return   true if the save was successful
+	 */
 	private boolean saveImpl(E data, boolean saveAs) {
 		if (saveAs || currentSession == null) {
 			int res = fileChooser.showSaveDialog(parent);
@@ -95,6 +125,10 @@ public class FileHandler<E> {
 		return saveImpl(data, true);
 	}
 
+	/**
+	 * Notifies the FileHandler of unsaved changes so it knows to
+	 * prompt the user to save.
+	 */
 	public void notifyOfUnsavedChanges() {
 		unsavedChanges = true;
 	}
