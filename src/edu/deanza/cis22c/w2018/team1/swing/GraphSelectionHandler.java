@@ -144,6 +144,8 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		}
 	}
 
+	private double dragEpsilon = 5; // Small drags push garbage undo frames without this
+
 	@Override
 	/**
 	 * If there's a drag, terminate it and push an UndoEvent
@@ -155,16 +157,18 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 		Vector2 mousePos = new Vector2(e.getPoint());
 		if (posCache != null) {
 			Vector2 dP = mousePos.minus(dragStart);
-			if (!headItemValid) {
-				history.addToHistory(UndoItem.create(pane::repaint, pane::repaint));
-			}
-			for (E vertex: selection) {
-				Point2D oldPos = posCache.get(vertex);
-				Point2D newPos = dP.plus(oldPos).asPoint();
-				pane.setVertexPosition(vertex, newPos);
-				history.fuseToHistory(UndoItem.create(
-						() -> pane.setVertexPosition(vertex, oldPos),
-						() -> pane.setVertexPosition(vertex, newPos)));
+			if (dP.magnitude() > dragEpsilon) {
+				if (!headItemValid) {
+					history.addToHistory(UndoItem.create(pane::repaint, pane::repaint));
+				}
+				for (E vertex : selection) {
+					Point2D oldPos = posCache.get(vertex);
+					Point2D newPos = dP.plus(oldPos).asPoint();
+					pane.setVertexPosition(vertex, newPos);
+					history.fuseToHistory(UndoItem.create(
+							() -> pane.setVertexPosition(vertex, oldPos),
+							() -> pane.setVertexPosition(vertex, newPos)));
+				}
 			}
 		}
 		posCache = null;
