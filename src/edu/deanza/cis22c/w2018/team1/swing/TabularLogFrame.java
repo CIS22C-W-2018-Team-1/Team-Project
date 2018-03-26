@@ -97,11 +97,11 @@ public class TabularLogFrame extends JFrame {
 			File file = chooser.getSelectedFile();
 
 			try (Writer writer = new BufferedWriter(new FileWriter(file))) {
-				writer.write(csvEscape(colNames) + "\r\n");
+				writer.write(toCSVRow(colNames) + "\r\n");
 				// CSV files by standard need a CRLF for line ending
 
 				for (String[] line: logList) {
-					writer.write(csvEscape(line) + "\r\n");
+					writer.write(toCSVRow(line) + "\r\n");
 				}
 			} catch (IOException ex) {
 				JOptionPane.showMessageDialog(this, ex.getLocalizedMessage());
@@ -109,7 +109,7 @@ public class TabularLogFrame extends JFrame {
 		}
 	}
 
-	private static String csvEscape(String[] line) {
+	private static String toCSVRow(String[] line) {
 		StringJoiner joiner = new StringJoiner(",");
 		for (String field: line) {
 			joiner.add(csvEscape(field));
@@ -117,6 +117,13 @@ public class TabularLogFrame extends JFrame {
 		return joiner.toString();
 	}
 
+	/**
+	 * CSV requires that fields with special characters be quoted
+	 * with "double quotes", and that any literal double quotes
+	 * be escaped by doubling them.
+	 * @param   field   the field to escape
+	 * @return   the valid CSV field
+	 */
 	private static String csvEscape(String field) {
 		return field.matches(".*[\\r\\n,\"].*")
 				? '"' + field.replaceAll("\"", "\"\"") + '"'

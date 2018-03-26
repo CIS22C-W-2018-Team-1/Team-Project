@@ -79,7 +79,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 	@Override
 	/**
 	 * On a mouse press clear the selection / begin a drag /
-	 * begin a rectangel select, as appropriate.
+	 * begin a rectangle select, as appropriate.
 	 */
 	public void mousePressed(MouseEvent e) {
 		if (e.getButton() == MouseEvent.BUTTON1) {
@@ -150,7 +150,7 @@ public class GraphSelectionHandler<E> implements MouseInputListener {
 	/**
 	 * If there's a drag, terminate it and push an UndoEvent
 	 * to the history.
-	 * If there's a rectangle select, terminae it and add
+	 * If there's a rectangle select, terminate it and add
 	 * all the vertices to the selection.
 	 */
 	public void mouseReleased(MouseEvent e) {
