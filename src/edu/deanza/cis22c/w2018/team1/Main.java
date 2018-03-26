@@ -102,7 +102,7 @@ public class Main implements Runnable {
 	 * @param elemType         a type tag for the element type of the displayed graph
 	 * @return
 	 */
-	private static <E> JFrame buildGraphFrame(Supplier<E> vertIdSupplier, Type elemType) {
+	private static <E> JFrame buildGraphFrame(Supplier<Optional<E>> vertIdSupplier, Type elemType) {
 		JFrame frame = new JFrame();
 
 		GraphPanel<E> pane = new GraphPanel<>();
@@ -202,7 +202,7 @@ public class Main implements Runnable {
 	 *
 	 * @return   the right click menu
 	 */
-	private static <E> ContextMenu<Set<E>> buildRClickMenu(Supplier<E> vertIdSupplier,
+	private static <E> ContextMenu<Set<E>> buildRClickMenu(Supplier<Optional<E>> vertIdSupplier,
 	                                                       OrderedMouseListener listeners,
 	                                                       GraphSelectionHandler<E> selector,
 	                                                       GraphPanel<E> pane, JPanel layers,
@@ -211,22 +211,22 @@ public class Main implements Runnable {
 
 		rightClickMenu.setContextSupplier(p -> selector.getSelection());
 
-		JMenuItem newNode = rightClickMenu.addMenuItem(Set::isEmpty, e -> {
-			E vertex = vertIdSupplier.get();
-			pane.getGraph().addVertex(vertex);
-			pane.setVertexPosition(vertex, e.getLocation());
-			history.addToHistory(UndoItem.create(
-					() -> {
-						pane.getGraph().removeVertex(vertex);
-						pane.repaint();
-					},
-					() -> {
-						pane.getGraph().addVertex(vertex);
-						pane.setVertexPosition(vertex, e.getLocation());
-						pane.repaint();
-					}));
-			pane.repaint();
-		});
+		JMenuItem newNode = rightClickMenu.addMenuItem(Set::isEmpty, e ->
+			vertIdSupplier.get().ifPresent(vertex -> {
+				pane.getGraph().addVertex(vertex);
+				pane.setVertexPosition(vertex, e.getLocation());
+				history.addToHistory(UndoItem.create(
+						() -> {
+							pane.getGraph().removeVertex(vertex);
+							pane.repaint();
+						},
+						() -> {
+							pane.getGraph().addVertex(vertex);
+							pane.setVertexPosition(vertex, e.getLocation());
+							pane.repaint();
+						}));
+				pane.repaint();
+			}));
 		newNode.setText("New Node");
 
 		EdgeTool<E> edgeTool = new EdgeTool<>(pane, history);
@@ -597,8 +597,9 @@ public class Main implements Runnable {
 
 	@Override
 	public void run() {
-		JFrame frame = buildGraphFrame(() -> JOptionPane.showInputDialog("Input new node name:"), String.class);
-		frame.setSize(800, 600);
+		JFrame frame = buildGraphFrame(() -> Optional.ofNullable(JOptionPane.showInputDialog("Input new node name:")),
+				String.class);
+		frame.setSize(1600, 900);
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setVisible(true);
 	}
